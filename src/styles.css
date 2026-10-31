@@ -1560,7 +1560,7 @@ button:focus-visible {
   }
 }
 
-@media (orientation: portrait) and (max-height: 780px), (orientation: landscape) and (max-height: 520px) {
+@media (orientation: portrait) and (max-height: 600px), (orientation: landscape) and (max-height: 430px) {
   .setup-sub,
   .tagline,
   .menu-tip,
@@ -1802,5 +1802,61 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .logo .ch {
     animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ menu: tamanhos pela altura disponível
+   (como no MathClash, os elementos crescem com a altura do ecrã em vez de ficarem fixos) */
+
+@media (orientation: portrait) {
+  .menu .menu-zone {
+    gap: clamp(4px, 1.1dvh, 14px);
+    padding-block: 4px;
+  }
+  .setup-title {
+    font-size: clamp(13px, 2.1dvh, 20px);
+  }
+  .avatar-setup {
+    width: clamp(52px, 9dvh, 120px);
+    height: clamp(52px, 9dvh, 120px);
+  }
+  .arrow {
+    width: clamp(32px, 4.6dvh, 48px);
+    height: clamp(32px, 4.6dvh, 48px);
+  }
+  .swatches .swatch {
+    width: clamp(22px, min(4dvh, 9vw), 40px);
+    height: clamp(22px, min(4dvh, 9vw), 40px);
+  }
+  .diff-row .diff {
+    padding: clamp(4px, 1.1dvh, 12px) 2px;
+  }
+  .diff-row .diff-label {
+    font-size: clamp(12px, 2dvh, 18px);
+  }
+  .ready {
+    padding-block: clamp(6px, 1.3dvh, 14px);
+    font-size: clamp(18px, 3.1dvh, 28px);
+  }
+  .menu-mid {
+    gap: clamp(4px, 1dvh, 12px);
+  }
+  .logo {
+    font-size: clamp(30px, 5.5dvh, 60px);
+  }
+}
+
+/* Em retrato, as legendas secundárias saem para o espaço ir para os botões grandes. */
+@media (orientation: portrait) and (max-height: 900px) {
+  .tagline,
+  .menu-tip,
+  .diff-row .diff-hint {
+    display: none;
+  }
+}
+
+@media (orientation: portrait) and (max-height: 720px) {
+  .setup-sub {
+    display: none;
   }
 }
