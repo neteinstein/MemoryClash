@@ -129,7 +129,7 @@ export const TIME_LIMITS = [0, 120, 180, 300] as const;
 export type TimeLimit = (typeof TIME_LIMITS)[number];
 
 /** Acertos seguidos necessários para soltar um diabinho no adversário. */
-export const DEVIL_STREAK = 10;
+export const DEVIL_STREAK = 5;
 /** Tempo que o diabinho demora a voar até ao adversário (a maldição só pega quando ele aterra). */
 export const DEVIL_FLIGHT_MS = 1600;
 /** Notas extra que cada diabinho acrescenta à próxima sequência do adversário. */
@@ -152,9 +152,9 @@ export const ERROR_PAUSE_MS = 1300;
 /** O primeiro toque tem mais tempo, porque é preciso reagir ao fim da sequência. */
 export const FIRST_INPUT_TIMEOUT_FACTOR = 1.5;
 
-/** Células conquistadas por um acerto: sequências maiores valem mais. */
+/** Células conquistadas por um acerto: uma por cada nota da sequência acertada. */
 export function gainFor(sequenceLength: number): number {
-  return 2 + Math.ceil(sequenceLength / 2);
+  return Math.max(1, sequenceLength);
 }
 
 /** Células perdidas num erro: "um bocadinho" do que se tem. */

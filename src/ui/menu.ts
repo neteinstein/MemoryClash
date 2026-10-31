@@ -9,12 +9,12 @@ import {
   TIME_LIMITS,
   type PlayerId,
 } from '../game/config';
-import { AvatarView, BODIES, BODY_LABELS, SKINS, type Avatar } from './avatar';
+import { AvatarView, BODIES, BODY_LABELS, paletteOf, SKINS, type Avatar } from './avatar';
 import { openAvatarEditor } from './avatar-editor';
 import { DEVIL_SVG } from './devil';
 import { h, onClick } from './dom';
 import { keyboardHint } from './game-view';
-import { playerTheme, saveSettings, themeVars, type Settings } from './settings';
+import { playerTheme, zoneVars, saveSettings, themeVars, type Settings } from './settings';
 
 const ARROW_LEFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 const ARROW_RIGHT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
@@ -151,7 +151,7 @@ export class MenuView {
     this.refreshers.push(() => {
       const a = avatar();
       const theme = playerTheme(this.settings, player);
-      zone.setAttribute('style', `--pc:${theme.color};--pglow:${theme.glow}`);
+      zone.setAttribute('style', zoneVars(theme));
       view.set(a);
       title.textContent = a.name;
       sub.textContent = `${BODY_LABELS[a.body]} · ✎ personalizar`;
@@ -159,7 +159,7 @@ export class MenuView {
       swatches.querySelectorAll<HTMLElement>('.swatch').forEach((el) => {
         el.classList.toggle('selected', el.dataset.color === a.skin);
         el.classList.toggle('taken', el.dataset.color === taken);
-        el.setAttribute('aria-label', el.dataset.color === taken ? 'Cor do adversário' : (el.dataset.color ?? ''));
+        el.setAttribute('aria-label', el.dataset.color === taken ? 'Cor do adversário' : paletteOf(el.dataset.color ?? '').name);
       });
       const current = this.settings.difficulties[player];
       diffs.querySelectorAll<HTMLElement>('.diff').forEach((el) => el.classList.toggle('selected', el.dataset.id === current));
@@ -234,8 +234,8 @@ export class MenuView {
       h(
         'h1',
         { class: 'logo' },
-        h('span', { class: 'logo-a' }, 'Memory'),
-        h('span', { class: 'logo-b' }, 'Clash'),
+        h('span', { class: 'logo-a' }, ...logoLetters('Memory', [])),
+        h('span', { class: 'logo-b' }, ...logoLetters('Clash', ['#facc15', '#f97316', '#ec4899', '#a855f7', '#06b6d4'], 6)),
       ),
       h('p', { class: 'tagline' }, 'Repete a sequência e pinta o tabuleiro!'),
       this.segmented(
@@ -300,4 +300,11 @@ export class MenuView {
     this.overlay.className = 'overlay hidden';
     this.overlay.replaceChildren();
   }
+}
+
+/** Letras do logótipo, cada uma a ondular com um pequeno atraso (como no MathClash). */
+function logoLetters(word: string, colors: string[], offset = 0): HTMLElement[] {
+  return Array.from(word).map((ch, i) =>
+    h('span', { class: 'ch', style: `--i:${i + offset}${colors[i] ? `;--lc:${colors[i]}` : ''}` }, ch),
+  );
 }

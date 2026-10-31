@@ -11,6 +11,7 @@ import {
   EYES,
   MOUTHS,
   NAME_MAX,
+  paletteOf,
   randomAvatar,
   SKINS,
   type Avatar,
@@ -41,7 +42,10 @@ export function openAvatarEditor(
   takenSkin: string,
 ): void {
   const card = h('div', { class: `card editor editor-p${player}` });
-  const paint = () => card.setAttribute("style", `--pc:${avatar.skin};--pglow:color-mix(in srgb, ${avatar.skin} 55%, transparent)`);
+  const paint = () => {
+    const c = paletteOf(avatar.skin);
+    card.setAttribute('style', `--pc:${c.main};--pcd:${c.dark};--pcl:${c.light};--pglow:color-mix(in srgb, ${c.main} 55%, transparent)`);
+  };
   paint();
   const preview = new AvatarView(avatar, 'avatar avatar-xl');
   const nameInput = h('input', {
@@ -77,7 +81,7 @@ export function openAvatarEditor(
               ? h('button', {
                   class: `swatch${selected ? ' selected' : ''}${value === takenSkin ? ' taken' : ''}`,
                   style: `--sw:${value}`,
-                  'aria-label': value === takenSkin ? 'Cor do adversário' : value,
+                  'aria-label': value === takenSkin ? 'Cor do adversário' : paletteOf(value).name,
                   disabled: value === takenSkin,
                 })
               : h('button', {

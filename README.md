@@ -8,9 +8,9 @@ Cada jogador tem o seu teclado de cores. O jogo toca uma sequência de teclas (c
 
 | Situação | O que acontece |
 | --- | --- |
-| Acertas a sequência | A tua cor expande no tabuleiro (`2 + ⌈notas/2⌉` células): primeiro casas livres, depois casas roubadas ao adversário. A sequência cresce uma nota e **acelera**. |
+| Acertas a sequência | A tua cor expande no tabuleiro **uma célula por cada nota** da sequência (quanto mais longa, mais ganhas): primeiro casas livres, depois casas roubadas ao adversário. A sequência cresce uma nota e **acelera**. |
 | Erras (ou demoras demasiado) | Perdes um bocadinho do território (≈8%, mínimo 2 células), que fica livre. A sequência recomeça um pouco mais curta e mais lenta. |
-| 10 acertos seguidos | Aparece um **diabinho** 😈 que voa até ao adversário: a próxima sequência dele tem **+3 notas e toca 35% mais depressa**. Os diabinhos acumulam (até 2). |
+| 5 acertos seguidos | Aparece um **diabinho** 😈 que voa até ao adversário: a próxima sequência dele tem **+3 notas e toca 35% mais depressa**. Os diabinhos acumulam (até 2). |
 | Conquistas o tabuleiro todo | Ganhas! |
 | Limite de tempo (opcional) | Quando o tempo acaba, ganha quem tiver mais território. |
 

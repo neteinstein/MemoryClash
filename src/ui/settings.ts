@@ -1,4 +1,4 @@
-import { defaultAvatar, sanitizeAvatar, SKINS, type Avatar } from './avatar';
+import { defaultAvatar, paletteOf, sanitizeAvatar, SKINS, type Avatar } from './avatar';
 import { BOARD_SIZES, DIFFICULTIES, TIME_LIMITS, type BoardSizeId, type DifficultyId, type PlayerId } from '../game/config';
 
 export interface Settings {
@@ -60,18 +60,27 @@ export function saveSettings(s: Settings): void {
 export interface PlayerTheme {
   name: string;
   color: string;
+  dark: string;
+  light: string;
   glow: string;
 }
 
 /** A cor do jogador é a cor do seu avatar. */
 export function playerTheme(s: Settings, player: PlayerId): PlayerTheme {
-  const color = s.avatars[player].skin;
-  return { name: s.avatars[player].name, color, glow: withAlpha(color, 0.55) };
+  const c = paletteOf(s.avatars[player].skin);
+  return { name: s.avatars[player].name, color: c.main, dark: c.dark, light: c.light, glow: withAlpha(c.main, 0.55) };
+}
+
+/** Variáveis CSS de um jogador (--pc, --pcd, --pcl, --pglow). */
+export function zoneVars(t: PlayerTheme): string {
+  return `--pc:${t.color};--pcd:${t.dark};--pcl:${t.light};--pglow:${t.glow}`;
 }
 
 /** Variáveis CSS com as cores dos dois jogadores (tabuleiro, barra de território, logótipo). */
 export function themeVars(s: Settings): string {
-  return `--p1:${s.avatars[1].skin};--p2:${s.avatars[2].skin};--p1glow:${withAlpha(s.avatars[1].skin, 0.55)};--p2glow:${withAlpha(s.avatars[2].skin, 0.55)}`;
+  const a = playerTheme(s, 1);
+  const b = playerTheme(s, 2);
+  return `--p1:${a.color};--p2:${b.color};--p1d:${a.dark};--p2d:${b.dark};--p1glow:${a.glow};--p2glow:${b.glow}`;
 }
 
 function withAlpha(hex: string, alpha: number): string {

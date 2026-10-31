@@ -13,7 +13,7 @@ import type { PlayerEvent } from '../game/player';
 import { AvatarView, avatarSvg } from './avatar';
 import { devilElement, flyDevil, poof } from './devil';
 import { h, isPortrait, onClick, onTap } from './dom';
-import { playerTheme, themeVars, type Settings } from './settings';
+import { playerTheme, zoneVars, themeVars, type Settings } from './settings';
 
 /** Teclas físicas de cada jogador (por posição, independente do layout do teclado). */
 const KEY_CODES: Record<PlayerId, string[][]> = {
@@ -225,7 +225,7 @@ export class GameView {
       h('div', { class: 'timer' }, timerFill),
     );
 
-    const zone = h('section', { class: `zone zone-p${player}`, style: `--pc:${theme.color};--pglow:${theme.glow}` }, hud, pad);
+    const zone = h('section', { class: `zone zone-p${player}`, style: zoneVars(theme) }, hud, pad);
     return { zone, pad, keys, status, share, seq, pips, timerFill, badges, lightTimers: new Map(), statusTimer: 0, avatar };
   }
 
@@ -645,7 +645,7 @@ export class GameView {
         'div',
         {
           class: `result result-p${player} ${winner === player ? 'won' : winner === 0 ? 'tie' : 'lost'}`,
-          style: `--pc:${playerTheme(this.settings, player).color}`,
+          style: zoneVars(playerTheme(this.settings, player)),
         },
         h('span', {
           class: 'avatar avatar-result',

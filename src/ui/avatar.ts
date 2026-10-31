@@ -8,18 +8,23 @@ export const BODIES = ['blob', 'robot', 'cat', 'bear', 'alien', 'ghost'] as cons
 export const EYES = ['round', 'happy', 'sleepy', 'cyclops', 'hearts', 'angry'] as const;
 export const MOUTHS = ['smile', 'grin', 'open', 'tongue', 'fangs', 'o'] as const;
 export const EXTRAS = ['none', 'crown', 'tophat', 'cap', 'glasses', 'shades', 'bow', 'headphones', 'horns'] as const;
-export const SKINS = [
-  '#38bdf8',
-  '#f472b6',
-  '#facc15',
-  '#4ade80',
-  '#a78bfa',
-  '#fb923c',
-  '#f87171',
-  '#2dd4bf',
-  '#e5e7eb',
-  '#94a3b8',
+/** Paleta dos jogadores (a mesma do MathClash): cor principal, escura e clara. */
+export const PALETTE = [
+  { name: 'Azul', main: '#3b82f6', dark: '#1e40af', light: '#93c5fd' },
+  { name: 'Vermelho', main: '#ef4444', dark: '#991b1b', light: '#fca5a5' },
+  { name: 'Verde', main: '#22c55e', dark: '#166534', light: '#86efac' },
+  { name: 'Amarelo', main: '#facc15', dark: '#a16207', light: '#fef08a' },
+  { name: 'Roxo', main: '#a855f7', dark: '#6b21a8', light: '#d8b4fe' },
+  { name: 'Laranja', main: '#f97316', dark: '#9a3412', light: '#fdba74' },
+  { name: 'Rosa', main: '#ec4899', dark: '#9d174d', light: '#f9a8d4' },
+  { name: 'Ciano', main: '#06b6d4', dark: '#155e75', light: '#67e8f9' },
 ] as const;
+
+export const SKINS = PALETTE.map((c) => c.main);
+
+export function paletteOf(skin: string): (typeof PALETTE)[number] {
+  return PALETTE.find((c) => c.main === skin) ?? PALETTE[0];
+}
 
 export type BodyId = (typeof BODIES)[number];
 export type EyesId = (typeof EYES)[number];
@@ -49,8 +54,8 @@ export const BODY_LABELS: Record<BodyId, string> = {
 
 export function defaultAvatar(player: 1 | 2): Avatar {
   return player === 1
-    ? { name: 'Jogador 1', body: 'robot', skin: '#38bdf8', eyes: 'round', mouth: 'smile', extra: 'headphones' }
-    : { name: 'Jogador 2', body: 'cat', skin: '#f472b6', eyes: 'happy', mouth: 'tongue', extra: 'bow' };
+    ? { name: 'Jogador 1', body: 'robot', skin: '#3b82f6', eyes: 'round', mouth: 'smile', extra: 'headphones' }
+    : { name: 'Jogador 2', body: 'cat', skin: '#ef4444', eyes: 'happy', mouth: 'tongue', extra: 'bow' };
 }
 
 function pick<T>(list: readonly T[], value: unknown, fallback: T): T {
