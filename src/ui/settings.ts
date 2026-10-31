@@ -1,4 +1,4 @@
-import { defaultAvatar, sanitizeAvatar, type Avatar } from './avatar';
+import { defaultAvatar, sanitizeAvatar, SKINS, type Avatar } from './avatar';
 import { BOARD_SIZES, DIFFICULTIES, TIME_LIMITS, type BoardSizeId, type DifficultyId, type PlayerId } from '../game/config';
 
 export interface Settings {
@@ -39,6 +39,10 @@ export function loadSettings(): Settings {
     if (typeof data.rotateP2 === 'boolean') s.rotateP2 = data.rotateP2;
     if (typeof data.muted === 'boolean') s.muted = data.muted;
     for (const id of [1, 2] as PlayerId[]) s.avatars[id] = sanitizeAvatar(data.avatars?.[id], id);
+    // A cor do avatar é a cor do jogador no tabuleiro: os dois têm de ser diferentes.
+    if (s.avatars[2].skin === s.avatars[1].skin) {
+      s.avatars[2].skin = SKINS.find((c) => c !== s.avatars[1].skin) ?? SKINS[1];
+    }
   } catch {
     // Sem armazenamento disponível (modo privado, etc.): usa os valores por omissão.
   }
@@ -51,4 +55,26 @@ export function saveSettings(s: Settings): void {
   } catch {
     // Ignorar: as definições ficam só para esta sessão.
   }
+}
+
+export interface PlayerTheme {
+  name: string;
+  color: string;
+  glow: string;
+}
+
+/** A cor do jogador é a cor do seu avatar. */
+export function playerTheme(s: Settings, player: PlayerId): PlayerTheme {
+  const color = s.avatars[player].skin;
+  return { name: s.avatars[player].name, color, glow: withAlpha(color, 0.55) };
+}
+
+/** Variáveis CSS com as cores dos dois jogadores (tabuleiro, barra de território, logótipo). */
+export function themeVars(s: Settings): string {
+  return `--p1:${s.avatars[1].skin};--p2:${s.avatars[2].skin};--p1glow:${withAlpha(s.avatars[1].skin, 0.55)};--p2glow:${withAlpha(s.avatars[2].skin, 0.55)}`;
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }

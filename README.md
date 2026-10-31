@@ -27,7 +27,7 @@ Como cada jogador escolhe o seu nível, dá para equilibrar um jogo entre, por e
 
 ### Avatares
 
-Cada jogador tem um avatar personalizável: toca no avatar no menu para escolher corpo, cor, olhos, boca, acessório e nome (ou 🎲 para um aleatório). Fica guardado no dispositivo. Durante o jogo o avatar reage: fica contente quando acertas, tonto quando erras e assustado quando lhe chega um diabinho.
+No ecrã inicial, cada jogador escolhe tudo na sua metade: o avatar com as setas ‹ ›, a cor (que é também a sua cor no tabuleiro; a do adversário fica bloqueada), a dificuldade e, quando estiver pronto, carrega em **PRONTO!**. O jogo começa quando os dois estiverem prontos. Tocar no avatar ou no nome abre o editor completo (olhos, boca, acessório, nome, 🎲 aleatório). Fica tudo guardado no dispositivo. Durante o jogo o avatar reage: fica contente quando acertas, tonto quando erras e assustado quando lhe chega um diabinho.
 
 ### Controlos
 
