@@ -1,5 +1,7 @@
 import {
   CURSE_EXTRA_NOTES,
+  CURSE_MIN_STEP_MS,
+  ERROR_RESET_LENGTH,
   DEVIL_STREAK,
   ERROR_PAUSE_MS,
   FIRST_INPUT_TIMEOUT_FACTOR,
@@ -53,6 +55,8 @@ export class PlayerEngine {
   phaseStart = 0;
   stepMs = 0;
   speedLevel = 0;
+  /** Multiplicador extra do passo (< 1 acelera), controlado pela partida: sobe com o fim do tempo. */
+  rush = 1;
   streak = 0;
   pendingCurses = 0;
   activeCurse = 0;
@@ -179,7 +183,10 @@ export class PlayerEngine {
     this.roundSequence = this.activeCurse > 0
       ? this.sequence.concat(this.randomSequence(CURSE_EXTRA_NOTES * this.activeCurse, this.sequence))
       : this.sequence.slice();
-    this.stepMs = stepMsFor(this.difficulty, this.speedLevel, this.activeCurse);
+    this.stepMs = Math.max(
+      Math.min(CURSE_MIN_STEP_MS, this.difficulty.minStepMs),
+      Math.round(stepMsFor(this.difficulty, this.speedLevel, this.activeCurse) * this.rush),
+    );
     this.phase = 'showing';
     this.phaseStart = now + LEAD_IN_MS;
     this.showIndex = 0;
@@ -218,9 +225,8 @@ export class PlayerEngine {
     this.streak = 0;
     this.speedLevel = Math.max(0, this.speedLevel - 2);
     this.stats.errors++;
-    // Depois de um erro, uma sequência nova e um pouco mais curta.
-    const nextLength = Math.max(this.difficulty.startLength, this.sequence.length - 1);
-    this.sequence = this.randomSequence(nextLength);
+    // Depois de um erro, volta-se a uma sequência curta (2 notas).
+    this.sequence = this.randomSequence(ERROR_RESET_LENGTH);
     this.activeCurse = 0;
     this.phase = 'error';
     this.phaseStart = now;

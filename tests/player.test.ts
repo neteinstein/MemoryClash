@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEVIL_STREAK, DIFFICULTIES, LEAD_IN_MS, CURSE_EXTRA_NOTES, stepMsFor } from '../src/game/config';
+import { ERROR_RESET_LENGTH, DEVIL_STREAK, DIFFICULTIES, LEAD_IN_MS, CURSE_EXTRA_NOTES, stepMsFor } from '../src/game/config';
 import { PlayerEngine, type PlayerEvent } from '../src/game/player';
 import { createRng } from '../src/game/rng';
 
@@ -75,7 +75,22 @@ describe('PlayerEngine', () => {
     const err = events.find((e) => e.type === 'error');
     expect(err).toMatchObject({ reason: 'wrong', pressed: wrong });
     runUntil(p, t, 'showing');
-    expect(p.roundSequence).toHaveLength(DIFFICULTIES.normal.startLength);
+    expect(p.roundSequence).toHaveLength(ERROR_RESET_LENGTH);
+  });
+
+  it('erro numa sequência longa volta a uma combinação de 2', () => {
+    const { p } = setup(DIFFICULTIES.nightmare);
+    p.start(0);
+    let t = 0;
+    for (let i = 0; i < 3; i++) {
+      t = runUntil(p, t, 'input');
+      t = answer(p, t);
+    }
+    t = runUntil(p, t, 'input');
+    expect(p.roundSequence.length).toBe(DIFFICULTIES.nightmare.startLength + 3);
+    p.press((p.roundSequence[0] + 1) % DIFFICULTIES.nightmare.keys, t + 10);
+    runUntil(p, t, 'showing');
+    expect(p.roundSequence).toHaveLength(2);
   });
 
   it('erro por tempo esgotado', () => {

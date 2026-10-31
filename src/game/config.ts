@@ -128,6 +128,20 @@ export const BOARD_SIZE_ORDER: BoardSizeId[] = ['small', 'medium', 'large'];
 export const TIME_LIMITS = [0, 120, 180, 300] as const;
 export type TimeLimit = (typeof TIME_LIMITS)[number];
 
+/** Depois de um erro, a sequência recomeça com este número de notas. */
+export const ERROR_RESET_LENGTH = 2;
+/** Num jogo com tempo, a velocidade sobe até este fator (mais 45%) quando o tempo está a acabar. */
+export const FINAL_RUSH = 0.45;
+
+/**
+ * Fator de velocidade (≤ 1) para a fração do tempo já passada: começa em 1 e desce cada vez
+ * mais depressa à medida que o fim se aproxima.
+ */
+export function rushFactor(elapsedFraction: number): number {
+  const f = Math.min(1, Math.max(0, elapsedFraction));
+  return 1 - FINAL_RUSH * f * f;
+}
+
 /** Acertos seguidos necessários para soltar um diabinho no adversário. */
 export const DEVIL_STREAK = 5;
 /** Tempo que o diabinho demora a voar até ao adversário (a maldição só pega quando ele aterra). */
