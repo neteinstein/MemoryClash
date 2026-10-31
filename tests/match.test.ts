@@ -33,6 +33,11 @@ function answer(m: Match, p: PlayerEngine, t: number): number {
 }
 
 describe('Match', () => {
+  it('ganha uma célula por cada nota da sequência acertada', () => {
+    expect(gainFor(3)).toBe(3);
+    expect(gainFor(12)).toBe(12);
+  });
+
   it('um acerto expande o território do jogador', () => {
     const { m, events } = setup();
     m.start(0);

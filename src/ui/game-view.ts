@@ -6,7 +6,6 @@ import {
   DIFFICULTIES,
   ERROR_PAUSE_MS,
   KEYS,
-  PLAYER_THEMES,
   type PlayerId,
 } from '../game/config';
 import { Match, type MatchEvent } from '../game/match';
@@ -14,7 +13,7 @@ import type { PlayerEvent } from '../game/player';
 import { AvatarView, avatarSvg } from './avatar';
 import { devilElement, flyDevil, poof } from './devil';
 import { h, isPortrait, onClick, onTap } from './dom';
-import type { Settings } from './settings';
+import { playerTheme, zoneVars, themeVars, type Settings } from './settings';
 
 /** Teclas físicas de cada jogador (por posição, independente do layout do teclado). */
 const KEY_CODES: Record<PlayerId, string[][]> = {
@@ -148,7 +147,7 @@ export class GameView {
 
     this.root = h(
       'div',
-      { class: `arena game${settings.rotateP2 ? ' rotate-p2' : ''}` },
+      { class: `arena game${settings.rotateP2 ? ' rotate-p2' : ''}`, style: themeVars(settings) },
       this.sides[2].zone,
       mid,
       this.sides[1].zone,
@@ -167,7 +166,7 @@ export class GameView {
   // ---------------------------------------------------------------- construção
 
   private buildSide(player: PlayerId): Side {
-    const theme = PLAYER_THEMES[player];
+    const theme = playerTheme(this.settings, player);
     const difficulty = DIFFICULTIES[this.settings.difficulties[player]];
     const cols = difficulty.keys / 2;
     const keys: HTMLButtonElement[] = [];
@@ -226,7 +225,7 @@ export class GameView {
       h('div', { class: 'timer' }, timerFill),
     );
 
-    const zone = h('section', { class: `zone zone-p${player}`, style: `--pc:${theme.color};--pglow:${theme.glow}` }, hud, pad);
+    const zone = h('section', { class: `zone zone-p${player}`, style: zoneVars(theme) }, hud, pad);
     return { zone, pad, keys, status, share, seq, pips, timerFill, badges, lightTimers: new Map(), statusTimer: 0, avatar };
   }
 
@@ -646,7 +645,7 @@ export class GameView {
         'div',
         {
           class: `result result-p${player} ${winner === player ? 'won' : winner === 0 ? 'tie' : 'lost'}`,
-          style: `--pc:${PLAYER_THEMES[player].color}`,
+          style: zoneVars(playerTheme(this.settings, player)),
         },
         h('span', {
           class: 'avatar avatar-result',

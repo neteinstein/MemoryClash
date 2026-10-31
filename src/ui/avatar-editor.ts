@@ -1,5 +1,5 @@
 import { synth } from '../audio/synth';
-import { PLAYER_THEMES, type PlayerId } from '../game/config';
+import { type PlayerId } from '../game/config';
 import {
   AvatarView,
   avatarSvg,
@@ -11,6 +11,7 @@ import {
   EYES,
   MOUTHS,
   NAME_MAX,
+  paletteOf,
   randomAvatar,
   SKINS,
   type Avatar,
@@ -37,8 +38,15 @@ export function openAvatarEditor(
   avatar: Avatar,
   onChange: (a: Avatar) => void,
   onClose: () => void,
+  /** Cor que o adversário já escolheu (não pode ser repetida). */
+  takenSkin: string,
 ): void {
-  const theme = PLAYER_THEMES[player];
+  const card = h('div', { class: `card editor editor-p${player}` });
+  const paint = () => {
+    const c = paletteOf(avatar.skin);
+    card.setAttribute('style', `--pc:${c.main};--pcd:${c.dark};--pcl:${c.light};--pglow:color-mix(in srgb, ${c.main} 55%, transparent)`);
+  };
+  paint();
   const preview = new AvatarView(avatar, 'avatar avatar-xl');
   const nameInput = h('input', {
     class: 'name-input',
@@ -59,6 +67,7 @@ export function openAvatarEditor(
     avatar = next;
     preview.set(avatar);
     onChange(avatar);
+    paint();
     renderOptions();
   };
 
@@ -69,7 +78,12 @@ export function openAvatarEditor(
           const selected = avatar[row.part] === value;
           const btn =
             row.part === 'skin'
-              ? h('button', { class: `swatch${selected ? ' selected' : ''}`, style: `--sw:${value}`, 'aria-label': value })
+              ? h('button', {
+                  class: `swatch${selected ? ' selected' : ''}${value === takenSkin ? ' taken' : ''}`,
+                  style: `--sw:${value}`,
+                  'aria-label': value === takenSkin ? 'Cor do adversário' : paletteOf(value).name,
+                  disabled: value === takenSkin,
+                })
               : h('button', {
                   class: `opt${selected ? ' selected' : ''}`,
                   title: row.part === 'body' ? BODY_LABELS[value as Avatar['body']] : value,
@@ -112,10 +126,8 @@ export function openAvatarEditor(
   renderOptions();
   overlay.className = 'overlay dim';
   overlay.replaceChildren(
-    h(
-      'div',
-      { class: `card editor editor-p${player}`, style: `--pc:${theme.color};--pglow:${theme.glow}` },
-      h('h2', {}, `Avatar · ${theme.name}`),
+    (card.append(
+      h('h2', {}, `Avatar · Jogador ${player}`),
       h(
         'div',
         { class: 'editor-top' },
@@ -125,5 +137,6 @@ export function openAvatarEditor(
       ...rows.map((r) => h('div', { class: 'editor-row' }, h('span', { class: 'editor-label' }, r.label), r.opts)),
       done,
     ),
+    card),
   );
 }
