@@ -592,7 +592,9 @@ export class GameView {
       return;
     }
     const s = Math.ceil(left);
-    this.timeEl.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const hurry = this.match.rush(this.clock.now()) < 0.9;
+    this.timeEl.textContent = `${hurry ? '⚡' : ''}${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    this.timeEl.title = hurry ? 'O tempo está a acabar: as sequências aceleram!' : '';
     this.timeEl.classList.toggle('urgent', s <= 10);
   }
 

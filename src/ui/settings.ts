@@ -12,11 +12,12 @@ export interface Settings {
 }
 
 const KEY = 'memoryclash.settings.v1';
+const SETTINGS_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
   difficulties: { 1: 'normal', 2: 'normal' },
-  boardSize: 'medium',
-  timeLimitSec: 0,
+  boardSize: 'small',
+  timeLimitSec: 120,
   rotateP2: true,
   muted: false,
   avatars: { 1: defaultAvatar(1), 2: defaultAvatar(2) },
@@ -32,8 +33,11 @@ export function loadSettings(): Settings {
       const d = data.difficulties?.[id];
       if (d && d in DIFFICULTIES) s.difficulties[id] = d;
     }
-    if (data.boardSize && data.boardSize in BOARD_SIZES) s.boardSize = data.boardSize;
-    if (typeof data.timeLimitSec === 'number' && (TIME_LIMITS as readonly number[]).includes(data.timeLimitSec)) {
+    // Definições guardadas antes da versão 2 ficaram com os valores por omissão antigos
+    // (tabuleiro médio, sem tempo): passam para os novos (tabuleiro pequeno, 2 min).
+    const current = (data as { version?: number }).version === SETTINGS_VERSION;
+    if (current && data.boardSize && data.boardSize in BOARD_SIZES) s.boardSize = data.boardSize;
+    if (current && typeof data.timeLimitSec === 'number' && (TIME_LIMITS as readonly number[]).includes(data.timeLimitSec)) {
       s.timeLimitSec = data.timeLimitSec;
     }
     if (typeof data.rotateP2 === 'boolean') s.rotateP2 = data.rotateP2;
@@ -51,7 +55,7 @@ export function loadSettings(): Settings {
 
 export function saveSettings(s: Settings): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(s));
+    localStorage.setItem(KEY, JSON.stringify({ ...s, version: SETTINGS_VERSION }));
   } catch {
     // Ignorar: as definições ficam só para esta sessão.
   }

@@ -33,6 +33,35 @@ function answer(m: Match, p: PlayerEngine, t: number): number {
 }
 
 describe('Match', () => {
+  it('acelera à medida que o fim do tempo se aproxima', () => {
+    const { m } = setup(100);
+    m.start(0);
+    expect(m.rush(0)).toBe(1);
+    expect(m.rush(50_000)).toBeLessThan(1);
+    expect(m.rush(90_000)).toBeLessThan(m.rush(50_000));
+    expect(m.rush(100_000)).toBeCloseTo(0.55);
+    const free = setup(0).m;
+    free.start(0);
+    expect(free.rush(1e9)).toBe(1);
+  });
+
+  it('as sequências tocam mais depressa perto do fim', () => {
+    const early = setup(100).m;
+    early.start(0);
+    const late = setup(100).m;
+    late.start(0);
+    const p = early.players[1];
+    const q = late.players[1];
+    // Primeira ronda de cada um: um começa logo, o outro já com 90% do tempo passado.
+    let t = 0;
+    while (p.phase !== 'input') { t += 10; early.update(t); }
+    t = 90_000;
+    q.phase = 'success';
+    q.phaseStart = t - 10_000;
+    late.update(t);
+    expect(q.stepMs).toBeLessThan(p.stepMs);
+  });
+
   it('ganha uma célula por cada nota da sequência acertada', () => {
     expect(gainFor(3)).toBe(3);
     expect(gainFor(12)).toBe(12);

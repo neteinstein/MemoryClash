@@ -3,6 +3,7 @@ import {
   BOARD_SIZES,
   DEVIL_FLIGHT_MS,
   DIFFICULTIES,
+  rushFactor,
   gainFor,
   lossFor,
   type BoardSizeId,
@@ -87,6 +88,12 @@ export class Match {
     return Math.max(0, this.options.timeLimitSec - elapsed);
   }
 
+  /** Fator de velocidade pelo tempo (1 sem limite de tempo; desce até 0,55 no fim). */
+  rush(now: number): number {
+    if (this.options.timeLimitSec <= 0 || this.status === 'ready') return 1;
+    return rushFactor((now - this.startedAt) / 1000 / this.options.timeLimitSec);
+  }
+
   update(now: number): void {
     if (this.status !== 'running') return;
     this.now = now;
@@ -95,6 +102,10 @@ export class Match {
       this.devilsInFlight = this.devilsInFlight.filter((d) => now < d.landsAt);
       for (const d of landed) this.players[d.to].receiveCurse();
     }
+    // Num jogo com tempo, as sequências aceleram à medida que o fim se aproxima.
+    const rush = this.rush(now);
+    this.players[1].rush = rush;
+    this.players[2].rush = rush;
     this.players[1].update(now);
     if (this.status !== 'running') return;
     this.players[2].update(now);
