@@ -2209,3 +2209,36 @@ button:focus-visible {
     --board-w: min(46vw, calc((68vh - 70px) * 1000 / 866));
   }
 }
+
+/* A três: as três zonas com a mesma "altura" (vista por cada jogador) para os teclados ficarem parecidos.
+   Os lados são colunas da largura --side e o J1 tem uma faixa em baixo com essa mesma altura. */
+.arena.multi.players-3,
+.players-3 .overlay.end,
+.players-3 .overlay.countdown {
+  --side: min(30vh, 24vw);
+  grid-template-columns: var(--side) minmax(0, 1fr) var(--side);
+  grid-template-rows: minmax(0, 1fr) var(--side);
+  grid-template-areas: 'p3 mid p2' 'p1 p1 p1';
+}
+
+@media (orientation: portrait) {
+  .arena.multi.players-3,
+  .players-3 .overlay.end,
+  .players-3 .overlay.countdown {
+    --side: min(24vh, 30vw);
+  }
+}
+
+.game.multi.players-3,
+.game.multi.players-3 .overlay {
+  --board-w: min(100vw - 2 * var(--side) - 24px, (100vh - var(--side) - 70px) * 1000 / 866);
+}
+
+.game.multi.players-3 .game-mid {
+  width: var(--board-w);
+  justify-self: center;
+}
+
+.menu.multi.players-3 .menu-mid {
+  justify-self: center;
+}
