@@ -2114,3 +2114,98 @@ button:focus-visible {
     text-align: center;
   }
 }
+
+/* ------------------------------------------------------------------ 3 jogadores: tabuleiro triangular
+   J1 em baixo (base), J3 à esquerda e J2 à direita (os dois lados do triângulo). */
+
+@media (orientation: landscape) {
+  .arena.multi.players-3,
+  .players-3 .overlay.end,
+  .players-3 .overlay.countdown {
+    grid-template-areas: 'p3 . p2' 'p3 mid p2' 'p3 p1 p2';
+  }
+}
+
+@media (orientation: portrait) {
+  .arena.multi.players-3,
+  .players-3 .overlay.end,
+  .players-3 .overlay.countdown {
+    grid-template-areas: 'p3 . p2' 'p3 mid p2' 'p1 p1 p1';
+  }
+}
+
+.players-3 .zone-p2 > .zone-inner {
+  width: 100cqh;
+  height: 100cqw;
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.players-3 .cd-p2 span {
+  transform: rotate(-90deg);
+}
+
+.multi.players-3 .editor-p2 {
+  width: min(94vh, 520px);
+  max-height: 88vw;
+  transform: rotate(-90deg);
+}
+
+.board.tri {
+  position: relative;
+  display: block;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  overflow: visible;
+}
+
+.board.tri .cell {
+  position: absolute;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.board.tri .cell.up {
+  clip-path: polygon(50% 7%, 95% 97%, 5% 97%);
+}
+
+.board.tri .cell.down {
+  clip-path: polygon(5% 3%, 95% 3%, 50% 93%);
+}
+
+.board.tri .cell.o0 {
+  background: var(--neutral-cell);
+}
+
+/* A três não há ninguém em cima: o centro (triângulo) ocupa essa altura toda e fica maior. */
+.arena.multi.players-3,
+.players-3 .overlay.end,
+.players-3 .overlay.countdown {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 32vh);
+}
+
+@media (orientation: landscape) {
+  .arena.multi.players-3,
+  .players-3 .overlay.end,
+  .players-3 .overlay.countdown {
+    grid-template-areas: 'p3 mid p2' 'p3 p1 p2';
+  }
+}
+
+@media (orientation: portrait) {
+  .arena.multi.players-3,
+  .players-3 .overlay.end,
+  .players-3 .overlay.countdown {
+    grid-template-areas: 'p3 mid p2' 'p1 p1 p1';
+  }
+}
+
+.game.multi.players-3 {
+  --board-w: min(60vmin, 100vw, calc((68vh - 70px) * 1000 / 866));
+}
+
+@media (orientation: portrait) {
+  .game.multi.players-3 {
+    --board-w: min(46vw, calc((68vh - 70px) * 1000 / 866));
+  }
+}

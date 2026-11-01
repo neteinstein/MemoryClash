@@ -15,11 +15,35 @@ describe('3 e 4 jogadores', () => {
     expect(b.owner(b.index(3, 7))).toBe(4);
   });
 
-  it('com 3 jogadores a borda direita fica livre', () => {
-    const b = new Board(8, 8, [1, 2, 3]);
-    expect(b.count(1)).toBe(7);
+  it('com 3 jogadores o tabuleiro é um triângulo: base, lado esquerdo e lado direito', () => {
+    const b = Board.triangle(8);
+    expect(b.size).toBe(64);
+    // Cada jogador começa com o seu lado menos os dois vértices (neutros).
+    expect(b.count(1)).toBe(6);
+    expect(b.count(2)).toBe(6);
     expect(b.count(3)).toBe(6);
-    expect(b.owner(b.index(3, 7))).toBe(0);
+    expect(b.owner(b.index(0, 0))).toBe(0); // vértice de cima
+    expect(b.owner(b.index(7, 0))).toBe(0); // vértice de baixo à esquerda
+    expect(b.owner(b.index(7, 14))).toBe(0); // vértice de baixo à direita
+    expect(b.owner(b.index(7, 4))).toBe(1); // base
+    expect(b.owner(b.index(4, 0))).toBe(3); // lado esquerdo
+    expect(b.owner(b.index(4, 8))).toBe(2); // lado direito
+  });
+
+  it('no triângulo cada peça tem 3 vizinhos no máximo, e a vizinhança é simétrica', () => {
+    const b = Board.triangle(6);
+    for (let i = 0; i < b.size; i++) {
+      const ns = b.neighbors(i);
+      expect(ns.length).toBeLessThanOrEqual(3);
+      for (const n of ns) expect(b.neighbors(n)).toContain(i);
+    }
+    expect(b.neighbors(b.index(0, 0))).toEqual([b.index(1, 1)]);
+  });
+
+  it('no triângulo dá para conquistar tudo', () => {
+    const b = Board.triangle(5);
+    b.expand(1, 1000, createRng(5));
+    expect(b.conqueror()).toBe(1);
   });
 
   it('o jogador 3 cresce a partir da esquerda', () => {
@@ -55,7 +79,8 @@ describe('3 e 4 jogadores', () => {
   it('com tempo, ganha quem tem mais território; empate no topo não tem vencedor', () => {
     const m = new Match({ difficulties: {}, players: 3, boardSize: 'small', timeLimitSec: 1, seed: 3 });
     m.start(0);
-    expect(m.leader()).toBe(0); // J1 e J2 começam ambos com 7 células
+    expect(m.board.shape).toBe('triangle');
+    expect(m.leader()).toBe(0); // os três começam com o mesmo número de peças
     m.board.expand(1, 1, createRng(4));
     expect(m.leader()).toBe(1);
   });

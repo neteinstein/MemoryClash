@@ -20,38 +20,63 @@ const JITTER = 1.6;
  * Cada acerto expande a cor do jogador a partir do território que já tem; cada erro devolve
  * células da linha da frente à neutralidade.
  */
+export type BoardShape = 'rect' | 'triangle';
+
 export class Board {
+  readonly shape: BoardShape;
+  /** Retângulo: linhas. Triângulo: número de filas (= lado). */
   readonly depth: number;
+  /** Retângulo: colunas. Triângulo: igual a `depth`. */
   readonly breadth: number;
   readonly cells: Uint8Array;
   readonly players: PlayerId[];
 
-  constructor(depth: number, breadth: number, players: PlayerId[] = [1, 2]) {
+  constructor(depth: number, breadth: number, players: PlayerId[] = [1, 2], shape: BoardShape = 'rect') {
     if (depth < 2 || breadth < 1) throw new Error('Tabuleiro demasiado pequeno');
+    this.shape = shape;
     this.depth = depth;
     this.breadth = breadth;
     this.players = players;
-    this.cells = new Uint8Array(depth * breadth);
+    this.cells = new Uint8Array(shape === 'triangle' ? depth * depth : depth * breadth);
     for (let i = 0; i < this.cells.length; i++) {
       const homes = players.filter((p) => this.distanceFromHome(p, i) === 0);
       if (homes.length === 1) this.cells[i] = homes[0];
     }
   }
 
+  /**
+   * Tabuleiro triangular para 3 jogadores: um triângulo de lado `side` feito de `side²` triângulos
+   * pequenos (a fila r, a contar do vértice de cima, tem 2r+1). Casas: a base é do jogador 1 (em baixo),
+   * o lado esquerdo do jogador 3 e o lado direito do jogador 2. Os três vértices começam neutros.
+   */
+  static triangle(side: number, players: PlayerId[] = [1, 2, 3]): Board {
+    return new Board(side, side, players, 'triangle');
+  }
+
   get size(): number {
     return this.cells.length;
   }
 
+  /** Retângulo: (linha, coluna). Triângulo: (fila a partir do vértice, posição na fila 0..2·fila). */
   index(row: number, col: number): number {
-    return row * this.breadth + col;
+    return this.shape === 'triangle' ? row * row + col : row * this.breadth + col;
   }
 
   rowOf(index: number): number {
-    return Math.floor(index / this.breadth);
+    return this.shape === 'triangle' ? Math.floor(Math.sqrt(index)) : Math.floor(index / this.breadth);
   }
 
   colOf(index: number): number {
+    if (this.shape === 'triangle') {
+      const r = this.rowOf(index);
+      return index - r * r;
+    }
     return index % this.breadth;
+  }
+
+  /** Triângulo: as posições pares de cada fila apontam para cima, as ímpares para baixo. */
+  pointsUp(index: number): boolean {
+    return this.colOf(index) % 2 === 0;
   }
 
   owner(index: number): Owner {
@@ -60,6 +85,21 @@ export class Board {
 
   /** Distância (em linhas ou colunas) entre a célula e a borda que é a casa do jogador. */
   distanceFromHome(player: PlayerId, index: number): number {
+    if (this.shape === 'triangle') {
+      // Em "meios passos": cada triângulo pequeno fica a meia fila do vizinho.
+      const r = this.rowOf(index);
+      const k = this.colOf(index);
+      switch (player) {
+        case 1:
+          return (2 * (this.depth - 1 - r) + (k % 2)) / 2;
+        case 2:
+          return (2 * r - k) / 2;
+        case 3:
+          return k / 2;
+        default:
+          return Infinity;
+      }
+    }
     switch (player) {
       case 1:
         return this.rowOf(index);
@@ -76,6 +116,17 @@ export class Board {
     const row = this.rowOf(index);
     const col = this.colOf(index);
     const out: number[] = [];
+    if (this.shape === 'triangle') {
+      // Lados partilhados: os dois vizinhos da fila e, para cima/baixo, o triângulo encostado.
+      if (col > 0) out.push(index - 1);
+      if (col < 2 * row) out.push(index + 1);
+      if (col % 2 === 0) {
+        if (row < this.depth - 1) out.push(this.index(row + 1, col + 1));
+      } else {
+        out.push(this.index(row - 1, col - 1));
+      }
+      return out;
+    }
     if (row > 0) out.push(index - this.breadth);
     if (row < this.depth - 1) out.push(index + this.breadth);
     if (col > 0) out.push(index - 1);

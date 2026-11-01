@@ -59,11 +59,14 @@ export class Match {
     this.rng = createRng(seed);
     this.ids = playersFor(options.players ?? 2);
     const size = BOARD_SIZES[options.boardSize];
-    // A dois, o tabuleiro é comprido (uma casa em cada ponta); com mais jogadores é quadrado.
+    // A dois, o tabuleiro é comprido (uma casa em cada ponta); a três é um triângulo (uma casa por lado);
+    // a quatro é quadrado.
     this.board =
-      this.ids.length > 2
-        ? new Board(size.square, size.square, this.ids)
-        : new Board(size.depth, size.breadth, this.ids);
+      this.ids.length === 3
+        ? Board.triangle(size.square, this.ids)
+        : this.ids.length === 4
+          ? new Board(size.square, size.square, this.ids)
+          : new Board(size.depth, size.breadth, this.ids);
     // Cada jogador tem o seu próprio gerador para que as sequências sejam independentes.
     const players = {} as Record<PlayerId, PlayerEngine>;
     for (const id of this.ids) {

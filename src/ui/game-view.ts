@@ -286,6 +286,10 @@ export class GameView {
    */
   private layoutBoard(): void {
     const b = this.match.board;
+    if (b.shape === 'triangle') {
+      this.layoutTriangle();
+      return;
+    }
     const portrait = this.multi || isPortrait();
     const cols = portrait ? b.breadth : b.depth;
     const rows = portrait ? b.depth : b.breadth;
@@ -301,6 +305,27 @@ export class GameView {
         cell.style.gridRow = String(c + 1);
         cell.style.gridColumn = String(r + 1);
       }
+    });
+  }
+
+  /** A três: triângulo com o vértice para cima; a base fica virada para o J1, os lados para o J3 e o J2. */
+  private layoutTriangle(): void {
+    const b = this.match.board;
+    const n = b.depth;
+    this.board.classList.add('tri');
+    // Proporção de um triângulo equilátero (altura = lado × √3/2).
+    this.root.style.setProperty('--bw', '1000');
+    this.root.style.setProperty('--bh', '866');
+    const w = 100 / n; // largura de cada triângulo pequeno, em % da base
+    this.cells.forEach((cell, i) => {
+      const r = b.rowOf(i);
+      const k = b.colOf(i);
+      cell.classList.toggle('up', b.pointsUp(i));
+      cell.classList.toggle('down', !b.pointsUp(i));
+      cell.style.left = `${((n - 1 - r) * w) / 2 + (k * w) / 2}%`;
+      cell.style.top = `${(r * 100) / n}%`;
+      cell.style.width = `${w}%`;
+      cell.style.height = `${100 / n}%`;
     });
   }
 
@@ -433,7 +458,7 @@ export class GameView {
   // ---------------------------------------------------------------- eventos do jogo
 
   private pan(player: PlayerId): number {
-    if (this.multi) return player === 3 ? -0.35 : player === 4 ? 0.35 : 0;
+    if (this.multi) return player === 3 ? -0.35 : player === 4 || (player === 2 && this.ids.length === 3) ? 0.35 : 0;
     if (isPortrait()) return 0;
     return player === 1 ? -0.35 : 0.35;
   }
@@ -538,7 +563,8 @@ export class GameView {
   private applyBoard(player: PlayerId, changes: CellChange[], reason: 'gain' | 'loss'): void {
     changes.forEach((ch, n) => {
       const cell = this.cells[ch.index];
-      cell.className = `cell o${ch.to}`;
+      const tri = this.match.board.shape === 'triangle' ? (this.match.board.pointsUp(ch.index) ? ' up' : ' down') : '';
+      cell.className = `cell o${ch.to}${tri}`;
       cell.style.animationDelay = `${n * 45}ms`;
       void cell.offsetWidth;
       cell.classList.add(reason === 'gain' ? (ch.from === 0 ? 'pop' : 'steal') : 'lost');

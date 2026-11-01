@@ -31,7 +31,7 @@ No ecrã inicial, cada jogador escolhe tudo na sua metade: o avatar com as setas
 
 ### 3 ou 4 jogadores (tablets)
 
-Em ecrãs grandes (tablets, computadores) aparece a opção **Jogadores: 2 · 3 · 4**. Com 3 ou 4, fica um jogador em cada lado do ecrã: J1 em baixo, J2 em cima, J3 à esquerda e J4 à direita, cada um com a sua zona virada para si. O tabuleiro passa a ser quadrado e cada jogador começa na sua borda. O diabinho vai sempre para o adversário com mais território. Com tempo, ganha quem tiver mais território (empate no primeiro lugar = empate). No teclado, J3 usa `1 2 3 4 / Z X C V` e J4 usa `7 8 9 0 / M , . -`.
+Em ecrãs grandes (tablets, computadores) aparece a opção **Jogadores: 2 · 3 · 4**. Com 3 ou 4, fica um jogador em cada lado do ecrã, cada um com a sua zona virada para si. **A 3, o tabuleiro é um triângulo** (feito de triângulos pequenos): J1 em baixo fica com a base, J3 à esquerda e J2 à direita com os lados. **A 4, o tabuleiro é quadrado**: J1 em baixo, J2 em cima, J3 à esquerda e J4 à direita. Cada jogador começa na sua borda (os cantos/vértices começam livres). O diabinho vai sempre para o adversário com mais território. Com tempo, ganha quem tiver mais território (empate no primeiro lugar = empate). No teclado, J3 usa `1 2 3 4 / Z X C V` e J4 usa `7 8 9 0 / M , . -`.
 
 ### Controlos
 
