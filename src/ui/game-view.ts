@@ -747,7 +747,7 @@ export class GameView {
         ),
       );
     };
-    const rematch = h('button', { class: 'btn primary' }, 'Revanche');
+    const rematch = h('button', { class: 'btn primary' }, 'Desforra');
     const exit = h('button', { class: 'btn' }, 'Menu');
     onClick(rematch, () => this.callbacks.onRematch());
     onClick(exit, () => this.callbacks.onExit());
