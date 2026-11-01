@@ -41,7 +41,14 @@ function showMenu(): void {
     ignorePop = true;
     history.back();
   }
-  menu = new MenuView(settings, { onPlay: startGame });
+  menu = new MenuView(settings, { onPlay: startGame, onRebuild: rebuildMenu });
+  menu.mount(app);
+}
+
+/** Redesenha o menu sem mexer no histórico (ex.: mudou o número de jogadores). */
+function rebuildMenu(): void {
+  menu?.destroy();
+  menu = new MenuView(settings, { onPlay: startGame, onRebuild: rebuildMenu });
   menu.mount(app);
 }
 

@@ -6,6 +6,7 @@ import {
   rushFactor,
   gainFor,
   lossFor,
+  playersFor,
   type BoardSizeId,
   type DifficultyId,
   type PlayerId,
@@ -14,7 +15,9 @@ import { PlayerEngine, type PlayerEvent } from './player';
 import { createRng, type Rng } from './rng';
 
 export interface MatchOptions {
-  difficulties: Record<PlayerId, DifficultyId>;
+  difficulties: Partial<Record<PlayerId, DifficultyId>>;
+  /** Número de jogadores (2 a 4); por omissão 2. */
+  players?: number;
   boardSize: BoardSizeId;
   /** Segundos; 0 = sem limite. */
   timeLimitSec: number;
@@ -29,15 +32,17 @@ export type MatchEvent =
   | { type: 'devil'; from: PlayerId; to: PlayerId }
   | { type: 'end'; winner: Owner; reason: EndReason };
 
-export function opponentOf(player: PlayerId): PlayerId {
-  return player === 1 ? 2 : 1;
-}
+/** Sementes por lugar (as dos jogadores 1 e 2 mantêm-se para as partidas a dois). */
+const SEED_SALT: Record<PlayerId, number> = { 1: 0x1234567, 2: 0x7654321, 3: 0x2468ace, 4: 0x13579bd };
 
-/** Junta os dois jogadores e o tabuleiro, e aplica as regras de conquista. */
+/** Junta os jogadores e o tabuleiro, e aplica as regras de conquista. */
 export class Match {
   readonly options: MatchOptions;
   readonly board: Board;
+  /** Só os lugares em jogo têm motor (ver `ids`). */
   readonly players: Record<PlayerId, PlayerEngine>;
+  /** Jogadores em jogo, por ordem. */
+  readonly ids: PlayerId[];
   private readonly rng: Rng;
   private readonly listeners: Array<(e: MatchEvent) => void> = [];
   status: 'ready' | 'running' | 'ended' = 'ready';
@@ -52,16 +57,21 @@ export class Match {
     this.options = options;
     const seed = options.seed ?? Math.floor(Math.random() * 2 ** 31);
     this.rng = createRng(seed);
+    this.ids = playersFor(options.players ?? 2);
     const size = BOARD_SIZES[options.boardSize];
-    this.board = new Board(size.depth, size.breadth);
+    // A dois, o tabuleiro é comprido (uma casa em cada ponta); com mais jogadores é quadrado.
+    this.board =
+      this.ids.length > 2
+        ? new Board(size.square, size.square, this.ids)
+        : new Board(size.depth, size.breadth, this.ids);
     // Cada jogador tem o seu próprio gerador para que as sequências sejam independentes.
-    this.players = {
-      1: new PlayerEngine(1, DIFFICULTIES[options.difficulties[1]], createRng(seed ^ 0x1234567)),
-      2: new PlayerEngine(2, DIFFICULTIES[options.difficulties[2]], createRng(seed ^ 0x7654321)),
-    };
-    for (const id of [1, 2] as PlayerId[]) {
-      this.players[id].on((e) => this.onPlayerEvent(id, e));
+    const players = {} as Record<PlayerId, PlayerEngine>;
+    for (const id of this.ids) {
+      const difficulty = DIFFICULTIES[options.difficulties[id] ?? 'normal'];
+      players[id] = new PlayerEngine(id, difficulty, createRng(seed ^ SEED_SALT[id]));
+      players[id].on((e) => this.onPlayerEvent(id, e));
     }
+    this.players = players;
   }
 
   on(listener: (e: MatchEvent) => void): void {
@@ -77,8 +87,7 @@ export class Match {
     this.status = 'running';
     this.now = now;
     this.startedAt = now;
-    this.players[1].start(now);
-    this.players[2].start(now);
+    for (const id of this.ids) this.players[id].start(now);
   }
 
   /** Segundos que faltam (ou `null` sem limite de tempo). */
@@ -104,18 +113,39 @@ export class Match {
     }
     // Num jogo com tempo, as sequências aceleram à medida que o fim se aproxima.
     const rush = this.rush(now);
-    this.players[1].rush = rush;
-    this.players[2].rush = rush;
-    this.players[1].update(now);
-    if (this.status !== 'running') return;
-    this.players[2].update(now);
-    if (this.status !== 'running') return;
-    const left = this.timeLeft(now);
-    if (left !== null && left <= 0) {
-      const p1 = this.board.count(1);
-      const p2 = this.board.count(2);
-      this.end(p1 === p2 ? 0 : p1 > p2 ? 1 : 2, 'time');
+    for (const id of this.ids) {
+      this.players[id].rush = rush;
+      this.players[id].update(now);
+      if (this.status !== 'running') return;
     }
+    const left = this.timeLeft(now);
+    if (left !== null && left <= 0) this.end(this.leader(), 'time');
+  }
+
+  /** Quem tem mais território (0 se houver empate no primeiro lugar). */
+  leader(): Owner {
+    let best: Owner = 0;
+    let bestCount = -1;
+    let tie = false;
+    for (const id of this.ids) {
+      const n = this.board.count(id);
+      if (n > bestCount) {
+        best = id;
+        bestCount = n;
+        tie = false;
+      } else if (n === bestCount) {
+        tie = true;
+      }
+    }
+    return tie ? 0 : best;
+  }
+
+  /** Alvo do diabinho: o único adversário a dois; com mais jogadores, o adversário com mais território. */
+  devilTarget(from: PlayerId): PlayerId {
+    const others = this.ids.filter((id) => id !== from);
+    let target = others[0];
+    for (const id of others) if (this.board.count(id) > this.board.count(target)) target = id;
+    return target;
   }
 
   press(player: PlayerId, key: number, now: number): boolean | null {
@@ -138,14 +168,14 @@ export class Match {
       case 'error': {
         const changes = this.board.shrink(player, lossFor(this.board.count(player)), this.rng);
         this.emit({ type: 'board', player, changes, reason: 'loss' });
-        // Se o erro deixar o adversário com o tabuleiro todo (só possível se o tabuleiro não tiver neutras),
-        // o adversário ganha.
+        // Se o erro deixar outro jogador com o tabuleiro todo (só possível se o tabuleiro não tiver neutras),
+        // esse jogador ganha.
         const conqueror = this.board.conqueror();
         if (conqueror !== 0) this.end(conqueror, 'conquest');
         break;
       }
       case 'devil': {
-        const to = opponentOf(player);
+        const to = this.devilTarget(player);
         this.devilsInFlight.push({ to, landsAt: this.now + DEVIL_FLIGHT_MS });
         this.emit({ type: 'devil', from: player, to });
         break;
@@ -160,15 +190,13 @@ export class Match {
     this.status = 'ended';
     this.winner = winner;
     this.endReason = reason;
-    this.players[1].stop();
-    this.players[2].stop();
+    for (const id of this.ids) this.players[id].stop();
     this.emit({ type: 'end', winner, reason });
   }
 
   /** Termina o jogo sem vencedor (ex.: voltar ao menu). */
   abort(): void {
     this.status = 'ended';
-    this.players[1].stop();
-    this.players[2].stop();
+    for (const id of this.ids) this.players[id].stop();
   }
 }

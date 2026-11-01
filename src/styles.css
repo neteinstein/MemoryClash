@@ -77,6 +77,17 @@ button:focus-visible {
 .zone-p2 {
   grid-area: p2;
 }
+.zone-p3 {
+  grid-area: p3;
+}
+.zone-p4 {
+  grid-area: p4;
+}
+
+/* A dois jogadores, o invólucro interior não altera nada; com 3 ou 4 é ele que roda. */
+.zone-inner {
+  display: contents;
+}
 .mid {
   grid-area: mid;
 }
@@ -811,22 +822,18 @@ button:focus-visible {
   background: var(--neutral-cell);
 }
 
-.bar-p1,
-.bar-p2 {
-  position: absolute;
-  top: 0;
-  bottom: 0;
+.bar {
+  display: flex;
+}
+
+.bar-seg {
+  flex: none;
+  height: 100%;
   transition: width 0.4s ease-out;
 }
 
-.bar-p1 {
-  left: 0;
-  background: var(--p1);
-}
-
-.bar-p2 {
-  right: 0;
-  background: var(--p2);
+.bar-free {
+  flex: 1;
 }
 
 .clock {
@@ -1858,5 +1865,252 @@ button:focus-visible {
 @media (orientation: portrait) and (max-height: 720px) {
   .setup-sub {
     display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ 3 e 4 jogadores (tablets)
+   J1 em baixo, J2 em cima, J3 à esquerda, J4 à direita; cada um vê a sua zona virada para si. */
+
+.arena.multi,
+.multi .overlay.end,
+.multi .overlay.countdown {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+@media (orientation: landscape) {
+  .arena.multi,
+  .multi .overlay.end,
+  .multi .overlay.countdown {
+    grid-template-areas: 'p3 p2 p4' 'p3 mid p4' 'p3 p1 p4';
+  }
+}
+
+@media (orientation: portrait) {
+  .arena.multi,
+  .multi .overlay.end,
+  .multi .overlay.countdown {
+    grid-template-areas: 'p2 p2 p2' 'p3 mid p4' 'p1 p1 p1';
+  }
+}
+
+.multi .cd-p3 {
+  grid-area: p3;
+}
+.multi .cd-p4 {
+  grid-area: p4;
+}
+.multi .cd-p2 span {
+  transform: rotate(180deg);
+}
+.multi .cd-p3 span {
+  transform: rotate(90deg);
+}
+.multi .cd-p4 span {
+  transform: rotate(-90deg);
+}
+
+.multi .zone,
+.multi .end-zone {
+  position: relative;
+  display: block;
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+  background: none;
+}
+
+.multi .zone > .zone-inner,
+.multi .end-zone > .zone-inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100cqw;
+  height: 100cqh;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--gap);
+  container-type: size;
+  overflow: hidden;
+}
+
+.multi .zone > .zone-inner {
+  background: linear-gradient(to top, color-mix(in srgb, var(--pcd) 85%, transparent) 0%, transparent 80%);
+}
+
+.multi .end-zone > .zone-inner {
+  align-items: center;
+  justify-content: center;
+}
+
+.multi .zone-p2 > .zone-inner {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.multi .zone-p3 > .zone-inner,
+.multi .zone-p4 > .zone-inner {
+  width: 100cqh;
+  height: 100cqw;
+}
+
+.multi .zone-p3 > .zone-inner {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.multi .zone-p4 > .zone-inner {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+/* Tabuleiro quadrado ao centro. */
+.game.multi {
+  --board-w: min(46vmin, calc(100vh - 64px), 100vw);
+}
+
+.multi .game-mid {
+  padding: 6px;
+}
+
+.multi .devil-badges {
+  top: -6px;
+  right: -4px;
+}
+
+/* Menu: cada zona ajusta-se ao seu espaço (unidades relativas à própria zona, já rodada). */
+.menu.multi .menu-zone > .zone-inner {
+  align-items: center;
+  justify-content: center;
+  gap: 2.4cqh;
+  padding: 2cqh 3cqw;
+  background: linear-gradient(to top, var(--pcd) 0%, transparent 90%);
+}
+
+.menu.multi .menu-mid {
+  width: min(46vmin, 420px);
+  padding: 8px;
+}
+
+.menu.multi .logo {
+  font-size: clamp(26px, 5vmin, 48px);
+}
+
+.multi .setup-title {
+  font-size: clamp(11px, 6cqh, 20px);
+}
+
+.multi .avatar-setup {
+  width: min(24cqh, 20cqw);
+  height: min(24cqh, 20cqw);
+}
+
+.multi .arrow {
+  width: min(12cqh, 9cqw);
+  height: min(12cqh, 9cqw);
+  padding: 6px;
+}
+
+.multi .swatches .swatch {
+  width: min(9cqh, 8cqw);
+  height: min(9cqh, 8cqw);
+  border-width: 2px;
+}
+
+.multi .diff-row {
+  width: min(100%, 460px);
+}
+
+.multi .diff-row .diff {
+  padding: 1.6cqh 2px;
+}
+
+.multi .diff-row .diff-label {
+  font-size: clamp(10px, 5.5cqh, 16px);
+}
+
+.multi .diff-row .diff-hint,
+.multi .setup-sub,
+.multi .kbd-hint,
+.multi .result .stats {
+  display: none;
+}
+
+.multi .ready {
+  min-width: min(60%, 220px);
+  padding-block: 1.8cqh;
+  font-size: clamp(14px, 8cqh, 26px);
+}
+
+.multi .result {
+  width: min(100%, 340px);
+  padding: 2cqh 3cqw;
+}
+
+.multi .avatar-result {
+  width: min(28cqh, 22cqw);
+  height: min(28cqh, 22cqw);
+}
+
+.multi .result-title {
+  font-size: clamp(18px, 12cqh, 40px);
+}
+
+/* Editor de avatar virado para quem o abriu. */
+.multi .editor-p2 {
+  transform: rotate(180deg);
+}
+
+.multi .editor-p3,
+.multi .editor-p4 {
+  width: min(94vh, 520px);
+  max-height: 88vw;
+}
+
+.multi .editor-p3 {
+  transform: rotate(90deg);
+}
+
+.multi .editor-p4 {
+  transform: rotate(-90deg);
+}
+
+.cell.o3 {
+  background: var(--p3);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 0 8px var(--p3glow);
+}
+
+.cell.o4 {
+  background: var(--p4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 0 8px var(--p4glow);
+}
+
+/* O ecrã final segue a mesma grelha do jogo; as zonas têm de esticar para terem tamanho. */
+.multi .overlay.end {
+  align-items: stretch;
+  justify-items: stretch;
+  grid-template-columns: minmax(0, 1fr) var(--board-w) minmax(0, 1fr);
+}
+
+.multi .end-mid {
+  flex-direction: row;
+}
+
+.game.multi {
+  --board-w: min(40vmin, calc(100vh - 64px), 100vw);
+}
+
+/* Tablet em retrato: o centro estreita para sobrar espaço aos jogadores dos lados. */
+@media (orientation: portrait) {
+  .menu.multi .menu-mid {
+    width: min(42vmin, 340px);
+  }
+  .menu.multi .setting {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .menu.multi .setting-label {
+    width: auto;
+    text-align: center;
   }
 }

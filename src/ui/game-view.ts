@@ -13,7 +13,7 @@ import type { PlayerEvent } from '../game/player';
 import { AvatarView, avatarSvg } from './avatar';
 import { devilElement, flyDevil, poof } from './devil';
 import { h, isPortrait, onClick, onTap } from './dom';
-import { playerTheme, zoneVars, themeVars, type Settings } from './settings';
+import { activePlayers, playerTheme, themeVars, zoneVars, type Settings } from './settings';
 
 /** Teclas físicas de cada jogador (por posição, independente do layout do teclado). */
 const KEY_CODES: Record<PlayerId, string[][]> = {
@@ -25,6 +25,14 @@ const KEY_CODES: Record<PlayerId, string[][]> = {
     ['KeyU', 'KeyI', 'KeyO', 'KeyP'],
     ['KeyJ', 'KeyK', 'KeyL', 'Semicolon'],
   ],
+  3: [
+    ['Digit1', 'Digit2', 'Digit3', 'Digit4'],
+    ['KeyZ', 'KeyX', 'KeyC', 'KeyV'],
+  ],
+  4: [
+    ['Digit7', 'Digit8', 'Digit9', 'Digit0'],
+    ['KeyM', 'Comma', 'Period', 'Slash'],
+  ],
 };
 const KEY_LABELS: Record<PlayerId, string[][]> = {
   1: [
@@ -34,6 +42,14 @@ const KEY_LABELS: Record<PlayerId, string[][]> = {
   2: [
     ['U', 'I', 'O', 'P'],
     ['J', 'K', 'L', 'Ç'],
+  ],
+  3: [
+    ['1', '2', '3', '4'],
+    ['Z', 'X', 'C', 'V'],
+  ],
+  4: [
+    ['7', '8', '9', '0'],
+    ['M', ',', '.', '-'],
   ],
 };
 
@@ -94,8 +110,10 @@ export class GameView {
   private readonly fx: HTMLElement;
   private readonly overlay: HTMLElement;
   private readonly timeEl: HTMLElement;
-  private readonly barP1: HTMLElement;
-  private readonly barP2: HTMLElement;
+  /** Jogadores em jogo; com 3 ou 4 há um em cada lado do ecrã. */
+  private readonly ids: PlayerId[];
+  private readonly multi: boolean;
+  private readonly bars = new Map<PlayerId, HTMLElement>();
   private readonly muteBtn: HTMLButtonElement;
   private raf = 0;
   private countdownTimers: number[] = [];
@@ -111,7 +129,10 @@ export class GameView {
   constructor(settings: Settings, callbacks: GameCallbacks) {
     this.settings = settings;
     this.callbacks = callbacks;
+    this.ids = activePlayers(settings);
+    this.multi = this.ids.length > 2;
     this.match = new Match({
+      players: this.ids.length,
       difficulties: settings.difficulties,
       boardSize: settings.boardSize,
       timeLimitSec: settings.timeLimitSec,
@@ -120,8 +141,18 @@ export class GameView {
     this.fx = h('div', { class: 'fx-layer' });
     this.overlay = h('div', { class: 'overlay hidden' });
     this.timeEl = h('span', { class: 'clock' });
-    this.barP1 = h('div', { class: 'bar-p1' });
-    this.barP2 = h('div', { class: 'bar-p2' });
+    // Barra de território: J1 e J3 a partir da esquerda, J4 e J2 a partir da direita, livre no meio.
+    const barOrder: Array<PlayerId | 0> = [1, 3, 0, 4, 2];
+    const bar = h('div', { class: 'bar' });
+    for (const id of barOrder) {
+      if (id === 0) {
+        bar.append(h('div', { class: 'bar-free' }));
+      } else if (this.ids.includes(id)) {
+        const seg = h('div', { class: `bar-seg`, style: `background:var(--p${id})` });
+        this.bars.set(id, seg);
+        bar.append(seg);
+      }
+    }
     this.muteBtn = h('button', { class: 'icon-btn', 'aria-label': 'Som' }) as HTMLButtonElement;
     this.board = h('div', { class: 'board' });
 
@@ -137,20 +168,26 @@ export class GameView {
         'div',
         { class: 'toolbar' },
         pauseBtn,
-        h('div', { class: 'territory' }, h('div', { class: 'bar' }, this.barP1, this.barP2), this.timeEl),
+        h('div', { class: 'territory' }, bar, this.timeEl),
         this.muteBtn,
       ),
       this.board,
     );
 
-    this.sides = { 1: this.buildSide(1), 2: this.buildSide(2) };
+    const sides = {} as Record<PlayerId, Side>;
+    for (const id of this.ids) sides[id] = this.buildSide(id);
+    this.sides = sides;
 
+    const layout = this.multi
+      ? ` multi players-${this.ids.length}`
+      : settings.rotateP2
+        ? ' rotate-p2'
+        : '';
     this.root = h(
       'div',
-      { class: `arena game${settings.rotateP2 ? ' rotate-p2' : ''}`, style: themeVars(settings) },
-      this.sides[2].zone,
+      { class: `arena game${layout}`, style: themeVars(settings) },
+      ...this.ids.map((id) => this.sides[id].zone),
       mid,
-      this.sides[1].zone,
       this.fx,
       this.overlay,
     );
@@ -225,7 +262,11 @@ export class GameView {
       h('div', { class: 'timer' }, timerFill),
     );
 
-    const zone = h('section', { class: `zone zone-p${player}`, style: zoneVars(theme) }, hud, pad);
+    const zone = h(
+      'section',
+      { class: `zone zone-p${player}`, style: zoneVars(theme) },
+      h('div', { class: 'zone-inner' }, hud, pad),
+    );
     return { zone, pad, keys, status, share, seq, pips, timerFill, badges, lightTimers: new Map(), statusTimer: 0, avatar };
   }
 
@@ -239,10 +280,13 @@ export class GameView {
     this.layoutBoard();
   }
 
-  /** Em retrato o J1 está em baixo e o J2 em cima; em paisagem o J1 à esquerda e o J2 à direita. */
+  /**
+   * A dois: em retrato o J1 está em baixo e o J2 em cima; em paisagem o J1 à esquerda e o J2 à direita.
+   * Com 3 ou 4 jogadores o tabuleiro fica sempre direito: J1 em baixo, J2 em cima, J3 à esquerda, J4 à direita.
+   */
   private layoutBoard(): void {
     const b = this.match.board;
-    const portrait = isPortrait();
+    const portrait = this.multi || isPortrait();
     const cols = portrait ? b.breadth : b.depth;
     const rows = portrait ? b.depth : b.breadth;
     this.root.style.setProperty('--bw', String(cols));
@@ -274,7 +318,7 @@ export class GameView {
     this.destroyed = true;
     cancelAnimationFrame(this.raf);
     this.countdownTimers.forEach((t) => clearTimeout(t));
-    for (const id of [1, 2] as PlayerId[]) {
+    for (const id of this.ids) {
       this.sides[id].lightTimers.forEach((t) => clearTimeout(t));
       clearTimeout(this.sides[id].statusTimer);
       this.sides[id].avatar.dispose();
@@ -290,10 +334,7 @@ export class GameView {
     const steps = ['3', '2', '1', 'Já!'];
     const show = (text: string, final: boolean) => {
       this.overlay.className = 'overlay countdown';
-      this.overlay.replaceChildren(
-        h('div', { class: 'cd cd-p2' }, h('span', {}, text)),
-        h('div', { class: 'cd cd-p1' }, h('span', {}, text)),
-      );
+      this.overlay.replaceChildren(...this.ids.map((id) => h('div', { class: `cd cd-p${id}` }, h('span', {}, text))));
       synth.countdown(final);
     };
     steps.forEach((text, i) => {
@@ -363,7 +404,7 @@ export class GameView {
       return;
     }
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    for (const player of [1, 2] as PlayerId[]) {
+    for (const player of this.ids) {
       const cols = DIFFICULTIES[this.settings.difficulties[player]].keys / 2;
       const grid = KEY_CODES[player];
       for (let row = 0; row < 2; row++) {
@@ -392,6 +433,7 @@ export class GameView {
   // ---------------------------------------------------------------- eventos do jogo
 
   private pan(player: PlayerId): number {
+    if (this.multi) return player === 3 ? -0.35 : player === 4 ? 0.35 : 0;
     if (isPortrait()) return 0;
     return player === 1 ? -0.35 : 0.35;
   }
@@ -544,7 +586,7 @@ export class GameView {
   }
 
   private clearLights(): void {
-    for (const id of [1, 2] as PlayerId[]) {
+    for (const id of this.ids) {
       this.sides[id].keys.forEach((k) => k.classList.remove('lit'));
     }
   }
@@ -567,16 +609,15 @@ export class GameView {
 
   private updateTerritory(): void {
     const b = this.match.board;
-    const p1 = b.share(1);
-    const p2 = b.share(2);
-    this.barP1.style.width = `${p1}%`;
-    this.barP2.style.width = `${p2}%`;
-    this.sides[1].share.textContent = `${Math.round(p1)}%`;
-    this.sides[2].share.textContent = `${Math.round(p2)}%`;
+    for (const id of this.ids) {
+      const share = b.share(id);
+      this.bars.get(id)!.style.width = `${share}%`;
+      this.sides[id].share.textContent = `${Math.round(share)}%`;
+    }
   }
 
   private updateTimers(now: number): void {
-    for (const id of [1, 2] as PlayerId[]) {
+    for (const id of this.ids) {
       const left = this.match.players[id].inputTimeLeft(now);
       const fill = this.sides[id].timerFill;
       fill.style.transform = `scaleX(${left})`;
@@ -629,6 +670,12 @@ export class GameView {
     );
   }
 
+  /** Lugar do jogador pelo território (1 = mais território). */
+  private placeOf(player: PlayerId): number {
+    const mine = this.match.board.count(player);
+    return 1 + this.ids.filter((id) => this.match.board.count(id) > mine).length;
+  }
+
   private showEnd(): void {
     if (this.destroyed) return;
     const { winner, endReason } = this.match;
@@ -637,12 +684,14 @@ export class GameView {
       const s = this.match.players[player].stats;
       const share = Math.round(this.match.board.share(player));
       const title = winner === 0 ? 'Empate!' : winner === player ? 'Ganhaste!' : 'Perdeste…';
+      const place = this.placeOf(player);
       const sub =
         winner === player && endReason === 'conquest'
           ? 'Conquistaste o tabuleiro todo!'
           : endReason === 'time'
             ? `Tempo esgotado · ${share}% do tabuleiro`
             : `Ficaste com ${share}% do tabuleiro`;
+      const rank = this.multi ? `${place}.º lugar · ` : '';
       return h(
         'div',
         {
@@ -655,7 +704,7 @@ export class GameView {
         }),
         h('div', { class: 'result-name' }, this.settings.avatars[player].name),
         h('div', { class: 'result-title' }, title),
-        h('div', { class: 'result-sub' }, sub),
+        h('div', { class: 'result-sub' }, rank + sub),
         h(
           'dl',
           { class: 'stats' },
@@ -676,11 +725,10 @@ export class GameView {
     const exit = h('button', { class: 'btn' }, 'Menu');
     onClick(rematch, () => this.callbacks.onRematch());
     onClick(exit, () => this.callbacks.onExit());
-    this.overlay.className = `overlay dim end${this.settings.rotateP2 ? ' rotate-p2' : ''}`;
+    this.overlay.className = `overlay dim end${!this.multi && this.settings.rotateP2 ? ' rotate-p2' : ''}`;
     this.overlay.replaceChildren(
-      h('div', { class: 'zone-p2 end-zone' }, panel(2)),
+      ...this.ids.map((id) => h('div', { class: `zone-p${id} end-zone` }, h('div', { class: 'zone-inner' }, panel(id)))),
       h('div', { class: 'mid end-mid' }, rematch, exit),
-      h('div', { class: 'zone-p1 end-zone' }, panel(1)),
     );
   }
 }

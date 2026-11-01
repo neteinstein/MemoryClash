@@ -1,7 +1,7 @@
-import type { PlayerId } from './config';
+import { type PlayerId } from './config';
 import type { Rng } from './rng';
 
-/** 0 = neutra, 1 = jogador 1, 2 = jogador 2. */
+/** 0 = neutra; 1–4 = jogador. */
 export type Owner = 0 | PlayerId;
 
 export interface CellChange {
@@ -14,7 +14,9 @@ export interface CellChange {
 const JITTER = 1.6;
 
 /**
- * Tabuleiro partilhado. A linha 0 é a "casa" do jogador 1 e a última linha a casa do jogador 2.
+ * Tabuleiro partilhado. Cada jogador tem uma borda como "casa": a linha 0 é do jogador 1 (em baixo),
+ * a última linha do jogador 2 (em cima), a coluna 0 do jogador 3 (esquerda) e a última coluna do
+ * jogador 4 (direita). Os cantos partilhados por duas casas começam neutros.
  * Cada acerto expande a cor do jogador a partir do território que já tem; cada erro devolve
  * células da linha da frente à neutralidade.
  */
@@ -22,15 +24,17 @@ export class Board {
   readonly depth: number;
   readonly breadth: number;
   readonly cells: Uint8Array;
+  readonly players: PlayerId[];
 
-  constructor(depth: number, breadth: number) {
+  constructor(depth: number, breadth: number, players: PlayerId[] = [1, 2]) {
     if (depth < 2 || breadth < 1) throw new Error('Tabuleiro demasiado pequeno');
     this.depth = depth;
     this.breadth = breadth;
+    this.players = players;
     this.cells = new Uint8Array(depth * breadth);
-    for (let c = 0; c < breadth; c++) {
-      this.cells[this.index(this.homeRow(1), c)] = 1;
-      this.cells[this.index(this.homeRow(2), c)] = 2;
+    for (let i = 0; i < this.cells.length; i++) {
+      const homes = players.filter((p) => this.distanceFromHome(p, i) === 0);
+      if (homes.length === 1) this.cells[i] = homes[0];
     }
   }
 
@@ -54,14 +58,18 @@ export class Board {
     return this.cells[index] as Owner;
   }
 
-  homeRow(player: PlayerId): number {
-    return player === 1 ? 0 : this.depth - 1;
-  }
-
-  /** Distância (em linhas) entre a célula e a casa do jogador. */
+  /** Distância (em linhas ou colunas) entre a célula e a borda que é a casa do jogador. */
   distanceFromHome(player: PlayerId, index: number): number {
-    const row = this.rowOf(index);
-    return player === 1 ? row : this.depth - 1 - row;
+    switch (player) {
+      case 1:
+        return this.rowOf(index);
+      case 2:
+        return this.depth - 1 - this.rowOf(index);
+      case 3:
+        return this.colOf(index);
+      case 4:
+        return this.breadth - 1 - this.colOf(index);
+    }
   }
 
   neighbors(index: number): number[] {
@@ -101,7 +109,7 @@ export class Board {
     for (let i = 0; i < this.cells.length; i++) {
       if (this.cells[i] === player) continue;
       if (!hasAny) {
-        if (this.rowOf(i) === this.homeRow(player)) out.push(i);
+        if (this.distanceFromHome(player, i) === 0) out.push(i);
         continue;
       }
       if (this.neighbors(i).some((n) => this.cells[n] === player)) out.push(i);
@@ -121,7 +129,7 @@ export class Board {
 
   /**
    * Expande o território do jogador em `amount` células. Primeiro ocupa células neutras;
-   * quando não há neutras ao alcance, rouba células ao adversário.
+   * quando não há neutras ao alcance, rouba células aos adversários.
    */
   expand(player: PlayerId, amount: number, rng: Rng): CellChange[] {
     const changes: CellChange[] = [];

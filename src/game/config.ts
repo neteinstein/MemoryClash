@@ -1,6 +1,16 @@
 /** Regras e parâmetros de equilíbrio do jogo. */
 
-export type PlayerId = 1 | 2;
+export type PlayerId = 1 | 2 | 3 | 4;
+
+/** Todos os lugares possíveis: J1 em baixo, J2 em cima, J3 à esquerda, J4 à direita. */
+export const ALL_PLAYERS: PlayerId[] = [1, 2, 3, 4];
+
+export type PlayerCount = 2 | 3 | 4;
+
+/** Jogadores ativos para um número de jogadores. */
+export function playersFor(count: number): PlayerId[] {
+  return ALL_PLAYERS.slice(0, Math.min(4, Math.max(2, count)));
+}
 
 export type DifficultyId = 'easy' | 'normal' | 'hard' | 'nightmare';
 
@@ -94,16 +104,6 @@ export const KEYS: KeyDef[] = [
   { name: 'turquesa', color: '#14b8a6', freq: 277.18 }, // Dó#4
 ];
 
-export interface PlayerTheme {
-  name: string;
-  color: string;
-  glow: string;
-}
-
-export const PLAYER_THEMES: Record<PlayerId, PlayerTheme> = {
-  1: { name: 'Jogador 1', color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.55)' },
-  2: { name: 'Jogador 2', color: '#f472b6', glow: 'rgba(244, 114, 182, 0.55)' },
-};
 
 export type BoardSizeId = 'small' | 'medium' | 'large';
 
@@ -114,12 +114,14 @@ export interface BoardSize {
   depth: number;
   /** Largura (colunas ao longo da casa de cada jogador). */
   breadth: number;
+  /** Lado do tabuleiro quadrado usado com 3 ou 4 jogadores. */
+  square: number;
 }
 
 export const BOARD_SIZES: Record<BoardSizeId, BoardSize> = {
-  small: { id: 'small', label: 'Pequeno', depth: 6, breadth: 9 },
-  medium: { id: 'medium', label: 'Médio', depth: 8, breadth: 12 },
-  large: { id: 'large', label: 'Grande', depth: 10, breadth: 15 },
+  small: { id: 'small', label: 'Pequeno', depth: 6, breadth: 9, square: 8 },
+  medium: { id: 'medium', label: 'Médio', depth: 8, breadth: 12, square: 10 },
+  large: { id: 'large', label: 'Grande', depth: 10, breadth: 15, square: 12 },
 };
 
 export const BOARD_SIZE_ORDER: BoardSizeId[] = ['small', 'medium', 'large'];
