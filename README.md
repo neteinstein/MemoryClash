@@ -3,7 +3,8 @@
 
 [![Vídeo de lançamento](assets/launch.jpg)](assets/launch.mp4)
 
-*Vídeo de lançamento (20 s), feito com [/brag](https://github.com/latent-spaces/brag).*
+*Vídeo de lançamento (22 s): telemóvel a 2 jogadores e tablet a 3 (tabuleiro em triângulo) e a 4 — gravado do jogo real e feito com [/brag](https://github.com/latent-spaces/brag).*
+
 Jogo de memória para **2 a 4 jogadores em simultâneo**, que corre no **browser** e em **Android**.
 
 Cada jogador tem o seu teclado de cores. O jogo toca uma sequência de teclas (cor + som) e o jogador tem de a repetir sem erros. Os dois jogam ao mesmo tempo, por isso os sons dos dois teclados sobrepõem-se — faz parte da dificuldade. Cada acerto faz a cor do jogador crescer no tabuleiro do meio; ganha quem conquistar o tabuleiro completo.
