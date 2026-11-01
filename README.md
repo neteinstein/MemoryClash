@@ -1,6 +1,6 @@
 # Memory Clash
 
-Jogo de memória para **2 jogadores em simultâneo**, que corre no **browser** e em **Android**.
+Jogo de memória para **2 a 4 jogadores em simultâneo**, que corre no **browser** e em **Android**.
 
 Cada jogador tem o seu teclado de cores. O jogo toca uma sequência de teclas (cor + som) e o jogador tem de a repetir sem erros. Os dois jogam ao mesmo tempo, por isso os sons dos dois teclados sobrepõem-se — faz parte da dificuldade. Cada acerto faz a cor do jogador crescer no tabuleiro do meio; ganha quem conquistar o tabuleiro completo.
 
@@ -28,6 +28,10 @@ Como cada jogador escolhe o seu nível, dá para equilibrar um jogo entre, por e
 ### Avatares
 
 No ecrã inicial, cada jogador escolhe tudo na sua metade: o avatar com as setas ‹ ›, a cor (que é também a sua cor no tabuleiro; a do adversário fica bloqueada), a dificuldade e, quando estiver pronto, carrega em **PRONTO!**. O jogo começa quando os dois estiverem prontos. Tocar no avatar ou no nome abre o editor completo (olhos, boca, acessório, nome, 🎲 aleatório). Fica tudo guardado no dispositivo. Durante o jogo o avatar reage: fica contente quando acertas, tonto quando erras e assustado quando lhe chega um diabinho.
+
+### 3 ou 4 jogadores (tablets)
+
+Em ecrãs grandes (tablets, computadores) aparece a opção **Jogadores: 2 · 3 · 4**. Com 3 ou 4, fica um jogador em cada lado do ecrã, cada um com a sua zona virada para si. **A 3, o tabuleiro é um triângulo** (feito de triângulos pequenos): J1 em baixo fica com a base, J3 à esquerda e J2 à direita com os lados. **A 4, o tabuleiro é quadrado**: J1 em baixo, J2 em cima, J3 à esquerda e J4 à direita. Cada jogador começa na sua borda (os cantos/vértices começam livres). O diabinho vai sempre para o adversário com mais território. Com tempo, ganha quem tiver mais território (empate no primeiro lugar = empate). No teclado, J3 usa `1 2 3 4 / Z X C V` e J4 usa `7 8 9 0 / M , . -`.
 
 ### Controlos
 

@@ -52,10 +52,15 @@ export const BODY_LABELS: Record<BodyId, string> = {
   ghost: 'Fantasma',
 };
 
-export function defaultAvatar(player: 1 | 2): Avatar {
-  return player === 1
-    ? { name: 'Jogador 1', body: 'robot', skin: '#3b82f6', eyes: 'round', mouth: 'smile', extra: 'headphones' }
-    : { name: 'Jogador 2', body: 'cat', skin: '#ef4444', eyes: 'happy', mouth: 'tongue', extra: 'bow' };
+const DEFAULT_AVATARS: Record<1 | 2 | 3 | 4, Avatar> = {
+  1: { name: 'Jogador 1', body: 'robot', skin: '#3b82f6', eyes: 'round', mouth: 'smile', extra: 'headphones' },
+  2: { name: 'Jogador 2', body: 'cat', skin: '#ef4444', eyes: 'happy', mouth: 'tongue', extra: 'bow' },
+  3: { name: 'Jogador 3', body: 'alien', skin: '#22c55e', eyes: 'cyclops', mouth: 'grin', extra: 'none' },
+  4: { name: 'Jogador 4', body: 'bear', skin: '#facc15', eyes: 'round', mouth: 'open', extra: 'crown' },
+};
+
+export function defaultAvatar(player: 1 | 2 | 3 | 4): Avatar {
+  return { ...DEFAULT_AVATARS[player] };
 }
 
 function pick<T>(list: readonly T[], value: unknown, fallback: T): T {
@@ -63,7 +68,7 @@ function pick<T>(list: readonly T[], value: unknown, fallback: T): T {
 }
 
 /** Valida um avatar vindo do armazenamento (dados antigos ou corrompidos não rebentam o jogo). */
-export function sanitizeAvatar(data: unknown, player: 1 | 2): Avatar {
+export function sanitizeAvatar(data: unknown, player: 1 | 2 | 3 | 4): Avatar {
   const d = defaultAvatar(player);
   if (!data || typeof data !== 'object') return d;
   const a = data as Record<string, unknown>;

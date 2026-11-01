@@ -38,8 +38,8 @@ export function openAvatarEditor(
   avatar: Avatar,
   onChange: (a: Avatar) => void,
   onClose: () => void,
-  /** Cor que o adversário já escolheu (não pode ser repetida). */
-  takenSkin: string,
+  /** Cores que os outros jogadores já escolheram (não podem ser repetidas). */
+  takenSkins: string[],
 ): void {
   const card = h('div', { class: `card editor editor-p${player}` });
   const paint = () => {
@@ -79,10 +79,10 @@ export function openAvatarEditor(
           const btn =
             row.part === 'skin'
               ? h('button', {
-                  class: `swatch${selected ? ' selected' : ''}${value === takenSkin ? ' taken' : ''}`,
+                  class: `swatch${selected ? ' selected' : ''}${takenSkins.includes(value) ? ' taken' : ''}`,
                   style: `--sw:${value}`,
-                  'aria-label': value === takenSkin ? 'Cor do adversário' : paletteOf(value).name,
-                  disabled: value === takenSkin,
+                  'aria-label': takenSkins.includes(value) ? 'Cor de outro jogador' : paletteOf(value).name,
+                  disabled: takenSkins.includes(value),
                 })
               : h('button', {
                   class: `opt${selected ? ' selected' : ''}`,

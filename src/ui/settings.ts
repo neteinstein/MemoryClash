@@ -1,5 +1,5 @@
 import { defaultAvatar, paletteOf, sanitizeAvatar, SKINS, type Avatar } from './avatar';
-import { BOARD_SIZES, DIFFICULTIES, TIME_LIMITS, type BoardSizeId, type DifficultyId, type PlayerId } from '../game/config';
+import { ALL_PLAYERS, BOARD_SIZES, DIFFICULTIES, playersFor, TIME_LIMITS, type BoardSizeId, type DifficultyId, type PlayerCount, type PlayerId } from '../game/config';
 
 export interface Settings {
   difficulties: Record<PlayerId, DifficultyId>;
@@ -9,18 +9,31 @@ export interface Settings {
   rotateP2: boolean;
   muted: boolean;
   avatars: Record<PlayerId, Avatar>;
+  /** Número de jogadores escolhido (só se usa mais de 2 em ecrãs grandes). */
+  playerCount: PlayerCount;
+}
+
+/** 3 ou 4 jogadores só em ecrãs grandes (tablets), onde há espaço para um teclado em cada lado. */
+export function bigScreen(): boolean {
+  return Math.min(window.innerWidth, window.innerHeight) >= 600;
+}
+
+/** Jogadores que vão jogar com as definições e o ecrã atuais. */
+export function activePlayers(s: Settings): PlayerId[] {
+  return playersFor(bigScreen() ? s.playerCount : 2);
 }
 
 const KEY = 'memoryclash.settings.v1';
 const SETTINGS_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
-  difficulties: { 1: 'normal', 2: 'normal' },
+  difficulties: { 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal' },
   boardSize: 'small',
   timeLimitSec: 120,
   rotateP2: true,
   muted: false,
-  avatars: { 1: defaultAvatar(1), 2: defaultAvatar(2) },
+  avatars: { 1: defaultAvatar(1), 2: defaultAvatar(2), 3: defaultAvatar(3), 4: defaultAvatar(4) },
+  playerCount: 2,
 };
 
 export function loadSettings(): Settings {
@@ -29,7 +42,7 @@ export function loadSettings(): Settings {
     const raw = localStorage.getItem(KEY);
     if (!raw) return s;
     const data = JSON.parse(raw) as Partial<Settings>;
-    for (const id of [1, 2] as PlayerId[]) {
+    for (const id of ALL_PLAYERS) {
       const d = data.difficulties?.[id];
       if (d && d in DIFFICULTIES) s.difficulties[id] = d;
     }
@@ -42,10 +55,13 @@ export function loadSettings(): Settings {
     }
     if (typeof data.rotateP2 === 'boolean') s.rotateP2 = data.rotateP2;
     if (typeof data.muted === 'boolean') s.muted = data.muted;
-    for (const id of [1, 2] as PlayerId[]) s.avatars[id] = sanitizeAvatar(data.avatars?.[id], id);
-    // A cor do avatar é a cor do jogador no tabuleiro: os dois têm de ser diferentes.
-    if (s.avatars[2].skin === s.avatars[1].skin) {
-      s.avatars[2].skin = SKINS.find((c) => c !== s.avatars[1].skin) ?? SKINS[1];
+    if (data.playerCount === 3 || data.playerCount === 4) s.playerCount = data.playerCount;
+    for (const id of ALL_PLAYERS) s.avatars[id] = sanitizeAvatar(data.avatars?.[id], id);
+    // A cor do avatar é a cor do jogador no tabuleiro: todos têm de ser diferentes.
+    const used = new Set<string>();
+    for (const id of ALL_PLAYERS) {
+      if (used.has(s.avatars[id].skin)) s.avatars[id].skin = SKINS.find((c) => !used.has(c)) ?? SKINS[0];
+      used.add(s.avatars[id].skin);
     }
   } catch {
     // Sem armazenamento disponível (modo privado, etc.): usa os valores por omissão.
@@ -80,11 +96,12 @@ export function zoneVars(t: PlayerTheme): string {
   return `--pc:${t.color};--pcd:${t.dark};--pcl:${t.light};--pglow:${t.glow}`;
 }
 
-/** Variáveis CSS com as cores dos dois jogadores (tabuleiro, barra de território, logótipo). */
+/** Variáveis CSS com as cores de todos os jogadores (tabuleiro, barra de território, logótipo). */
 export function themeVars(s: Settings): string {
-  const a = playerTheme(s, 1);
-  const b = playerTheme(s, 2);
-  return `--p1:${a.color};--p2:${b.color};--p1d:${a.dark};--p2d:${b.dark};--p1glow:${a.glow};--p2glow:${b.glow}`;
+  return ALL_PLAYERS.map((id) => {
+    const t = playerTheme(s, id);
+    return `--p${id}:${t.color};--p${id}d:${t.dark};--p${id}glow:${t.glow}`;
+  }).join(';');
 }
 
 function withAlpha(hex: string, alpha: number): string {

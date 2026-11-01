@@ -1,7 +1,7 @@
-import type { PlayerId } from './config';
+import { type PlayerId } from './config';
 import type { Rng } from './rng';
 
-/** 0 = neutra, 1 = jogador 1, 2 = jogador 2. */
+/** 0 = neutra; 1–4 = jogador. */
 export type Owner = 0 | PlayerId;
 
 export interface CellChange {
@@ -14,60 +14,119 @@ export interface CellChange {
 const JITTER = 1.6;
 
 /**
- * Tabuleiro partilhado. A linha 0 é a "casa" do jogador 1 e a última linha a casa do jogador 2.
+ * Tabuleiro partilhado. Cada jogador tem uma borda como "casa": a linha 0 é do jogador 1 (em baixo),
+ * a última linha do jogador 2 (em cima), a coluna 0 do jogador 3 (esquerda) e a última coluna do
+ * jogador 4 (direita). Os cantos partilhados por duas casas começam neutros.
  * Cada acerto expande a cor do jogador a partir do território que já tem; cada erro devolve
  * células da linha da frente à neutralidade.
  */
+export type BoardShape = 'rect' | 'triangle';
+
 export class Board {
+  readonly shape: BoardShape;
+  /** Retângulo: linhas. Triângulo: número de filas (= lado). */
   readonly depth: number;
+  /** Retângulo: colunas. Triângulo: igual a `depth`. */
   readonly breadth: number;
   readonly cells: Uint8Array;
+  readonly players: PlayerId[];
 
-  constructor(depth: number, breadth: number) {
+  constructor(depth: number, breadth: number, players: PlayerId[] = [1, 2], shape: BoardShape = 'rect') {
     if (depth < 2 || breadth < 1) throw new Error('Tabuleiro demasiado pequeno');
+    this.shape = shape;
     this.depth = depth;
     this.breadth = breadth;
-    this.cells = new Uint8Array(depth * breadth);
-    for (let c = 0; c < breadth; c++) {
-      this.cells[this.index(this.homeRow(1), c)] = 1;
-      this.cells[this.index(this.homeRow(2), c)] = 2;
+    this.players = players;
+    this.cells = new Uint8Array(shape === 'triangle' ? depth * depth : depth * breadth);
+    for (let i = 0; i < this.cells.length; i++) {
+      const homes = players.filter((p) => this.distanceFromHome(p, i) === 0);
+      if (homes.length === 1) this.cells[i] = homes[0];
     }
+  }
+
+  /**
+   * Tabuleiro triangular para 3 jogadores: um triângulo de lado `side` feito de `side²` triângulos
+   * pequenos (a fila r, a contar do vértice de cima, tem 2r+1). Casas: a base é do jogador 1 (em baixo),
+   * o lado esquerdo do jogador 3 e o lado direito do jogador 2. Os três vértices começam neutros.
+   */
+  static triangle(side: number, players: PlayerId[] = [1, 2, 3]): Board {
+    return new Board(side, side, players, 'triangle');
   }
 
   get size(): number {
     return this.cells.length;
   }
 
+  /** Retângulo: (linha, coluna). Triângulo: (fila a partir do vértice, posição na fila 0..2·fila). */
   index(row: number, col: number): number {
-    return row * this.breadth + col;
+    return this.shape === 'triangle' ? row * row + col : row * this.breadth + col;
   }
 
   rowOf(index: number): number {
-    return Math.floor(index / this.breadth);
+    return this.shape === 'triangle' ? Math.floor(Math.sqrt(index)) : Math.floor(index / this.breadth);
   }
 
   colOf(index: number): number {
+    if (this.shape === 'triangle') {
+      const r = this.rowOf(index);
+      return index - r * r;
+    }
     return index % this.breadth;
+  }
+
+  /** Triângulo: as posições pares de cada fila apontam para cima, as ímpares para baixo. */
+  pointsUp(index: number): boolean {
+    return this.colOf(index) % 2 === 0;
   }
 
   owner(index: number): Owner {
     return this.cells[index] as Owner;
   }
 
-  homeRow(player: PlayerId): number {
-    return player === 1 ? 0 : this.depth - 1;
-  }
-
-  /** Distância (em linhas) entre a célula e a casa do jogador. */
+  /** Distância (em linhas ou colunas) entre a célula e a borda que é a casa do jogador. */
   distanceFromHome(player: PlayerId, index: number): number {
-    const row = this.rowOf(index);
-    return player === 1 ? row : this.depth - 1 - row;
+    if (this.shape === 'triangle') {
+      // Em "meios passos": cada triângulo pequeno fica a meia fila do vizinho.
+      const r = this.rowOf(index);
+      const k = this.colOf(index);
+      switch (player) {
+        case 1:
+          return (2 * (this.depth - 1 - r) + (k % 2)) / 2;
+        case 2:
+          return (2 * r - k) / 2;
+        case 3:
+          return k / 2;
+        default:
+          return Infinity;
+      }
+    }
+    switch (player) {
+      case 1:
+        return this.rowOf(index);
+      case 2:
+        return this.depth - 1 - this.rowOf(index);
+      case 3:
+        return this.colOf(index);
+      case 4:
+        return this.breadth - 1 - this.colOf(index);
+    }
   }
 
   neighbors(index: number): number[] {
     const row = this.rowOf(index);
     const col = this.colOf(index);
     const out: number[] = [];
+    if (this.shape === 'triangle') {
+      // Lados partilhados: os dois vizinhos da fila e, para cima/baixo, o triângulo encostado.
+      if (col > 0) out.push(index - 1);
+      if (col < 2 * row) out.push(index + 1);
+      if (col % 2 === 0) {
+        if (row < this.depth - 1) out.push(this.index(row + 1, col + 1));
+      } else {
+        out.push(this.index(row - 1, col - 1));
+      }
+      return out;
+    }
     if (row > 0) out.push(index - this.breadth);
     if (row < this.depth - 1) out.push(index + this.breadth);
     if (col > 0) out.push(index - 1);
@@ -101,7 +160,7 @@ export class Board {
     for (let i = 0; i < this.cells.length; i++) {
       if (this.cells[i] === player) continue;
       if (!hasAny) {
-        if (this.rowOf(i) === this.homeRow(player)) out.push(i);
+        if (this.distanceFromHome(player, i) === 0) out.push(i);
         continue;
       }
       if (this.neighbors(i).some((n) => this.cells[n] === player)) out.push(i);
@@ -121,7 +180,7 @@ export class Board {
 
   /**
    * Expande o território do jogador em `amount` células. Primeiro ocupa células neutras;
-   * quando não há neutras ao alcance, rouba células ao adversário.
+   * quando não há neutras ao alcance, rouba células aos adversários.
    */
   expand(player: PlayerId, amount: number, rng: Rng): CellChange[] {
     const changes: CellChange[] = [];
